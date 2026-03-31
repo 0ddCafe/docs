@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cafescroll — The Starting Point</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=General+Sans:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,500;1,8..60,300;1,8..60,400&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  @font-face {
+    font-family: 'General Sans';
+    src: url('https://fonts.googleapis.com/css2?family=General+Sans:wght@400;500;600;700&display=swap');
+  }
+
+  :root {
+    --bg: #111110;
+    --surface: #1A1918;
+    --surface-raised: #222120;
+    --border: #2E2D2B;
+    --border-light: #383735;
+    --text-bright: #F0EBE3;
+    --text: #CCC5B8;
+    --text-secondary: #9A9285;
+    --text-muted: #6B655C;
+    --gold: #C9A84C;
+    --gold-dim: rgba(201, 168, 76, 0.15);
+    --gold-faint: rgba(201, 168, 76, 0.06);
+    --teal: #5BA69E;
+    --teal-dim: rgba(91, 166, 158, 0.12);
+    --cream: #E8DCC8;
+    --signal: #D4A24C;
+    --signal-bg: rgba(212, 162, 76, 0.08);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { font-size: 17px; scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Source Serif 4', Georgia, serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.78;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ====== HEADER ====== */
+  .header {
+    padding: 4.5rem 2rem 1.5rem;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .header-eyebrow {
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.6rem;
+    display: block;
+  }
+
+  .header-domain {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-weight: 500;
+    font-size: 2.8rem;
+    color: var(--text-bright);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 0.4rem;
+  }
+
+  .header-domain span { color: var(--gold); }
+
+  .header-sub {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin-bottom: 0;
+    font-style: italic;
+  }
+
+  /* ====== OPENING CARD ====== */
+  .opening {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem 3rem;
+  }
+
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 2rem;
+  }
+
+  .summary-pitch {
+    font-size: 1.06rem;
+    color: var(--cream);
+    line-height: 1.72;
+    margin-bottom: 1.5rem;
+  }
+
+  .summary-pitch em {
+    color: var(--gold);
+    font-style: normal;
+  }
+
+  .summary-facts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .summary-fact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .summary-fact-label {
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .summary-fact-value {
+    font-size: 0.9rem;
+    color: var(--text-bright);
+  }
+
+  /* ====== SECTIONS ====== */
+  .section {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 3rem 2rem;
+  }
+
+  .divider {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+
+  .divider hr {
+    border: none;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .section-label {
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.8rem;
+    display: block;
+  }
+
+  h2 {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-weight: 500;
+    font-size: 1.65rem;
+    color: var(--text-bright);
+    line-height: 1.3;
+    margin-bottom: 1.2rem;
+    letter-spacing: -0.01em;
+  }
+
+  h3 {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-weight: 500;
+    font-size: 1.15rem;
+    color: var(--text-bright);
+    margin-bottom: 0.8rem;
+  }
+
+  p { margin-bottom: 1.2rem; font-size: 0.96rem; }
+  p:last-child { margin-bottom: 0; }
+
+  strong { color: var(--text-bright); font-weight: 500; }
+
+  /* ====== SPOTIFY ANALOGY — more room to breathe ====== */
+  .analogy {
+    margin: 2rem 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .analogy-side {
+    padding: 1.8rem 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .analogy-side:last-child { border-bottom: none; }
+
+  .analogy-side-label {
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  .analogy-side-headline {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-weight: 500;
+    font-size: 1.2rem;
+    color: var(--text-bright);
+    margin-bottom: 0.4rem;
+  }
+
+  .analogy-side-desc {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.65;
+  }
+
+  .analogy-side-desc em {
+    color: var(--gold);
+    font-style: normal;
+  }
+
+  .analogy-connector {
+    padding: 0.6rem 2rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--gold-faint);
+  }
+
+  .analogy-connector p {
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    color: var(--gold);
+    margin-bottom: 0;
+    text-align: center;
+  }
+
+  /* ====== FEELING BLOCK ====== */
+  .feeling {
+    background: var(--surface);
+    border-left: 3px solid var(--gold);
+    border-radius: 0 8px 8px 0;
+    padding: 1.6rem 1.8rem;
+    margin: 2rem 0;
+  }
+
+  .feeling p {
+    font-size: 1rem;
+    line-height: 1.65;
+    color: var(--cream);
+    font-style: italic;
+    margin-bottom: 0;
+  }
+
+  .feeling p strong {
+    color: var(--gold);
+    font-weight: 400;
+    font-style: normal;
+  }
+
+  /* ====== STATUS ====== */
+  .status-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.6rem 1.2rem;
+    margin: 1.5rem 0;
+  }
+
+  .status-label {
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    text-align: right;
+    padding-top: 0.15rem;
+  }
+
+  .status-value {
+    font-size: 0.92rem;
+    color: var(--text);
+  }
+
+  .status-value.bright { color: var(--text-bright); }
+
+  /* ====== MONETIZATION SIGNAL — surfaced earlier ====== */
+  .signal-card {
+    background: var(--signal-bg);
+    border: 1px solid var(--gold-dim);
+    border-radius: 8px;
+    padding: 1.5rem 1.8rem;
+    margin: 2rem 0;
+  }
+
+  .signal-card-label {
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  .signal-card p {
+    font-size: 0.92rem;
+    color: var(--cream);
+    line-height: 1.7;
+  }
+
+  /* ====== v0 SPEC ====== */
+  .spec-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.8rem;
+    margin: 1.5rem 0;
+  }
+
+  .spec-card h3 {
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .spec-card h3 .tag {
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    padding: 0.2rem 0.6rem;
+    border-radius: 3px;
+    background: var(--gold-faint);
+    color: var(--gold);
+    border: 1px solid var(--gold-dim);
+    text-transform: uppercase;
+  }
+
+  .spec-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .spec-list li {
+    padding: 0.55rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.92rem;
+    display: flex;
+    gap: 0.8rem;
+    align-items: baseline;
+    line-height: 1.6;
+  }
+
+  .spec-list li:last-child { border-bottom: none; }
+
+  .spec-bullet {
+    color: var(--text-muted);
+    flex-shrink: 0;
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.72rem;
+  }
+
+  .spec-note {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px dashed var(--border);
+  }
+
+  /* ====== TECH STACK ====== */
+  .stack-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .stack-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem 1.2rem;
+  }
+
+  .stack-item-label {
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+    display: block;
+  }
+
+  .stack-item-value {
+    font-size: 0.92rem;
+    color: var(--text-bright);
+  }
+
+  .stack-item-note {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 0.2rem;
+    font-style: italic;
+  }
+
+  /* ====== ROADMAP — larger, more readable ====== */
+  .road {
+    margin: 1.5rem 0;
+  }
+
+  .road-step {
+    padding: 1.4rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .road-step:last-child { border-bottom: none; }
+
+  .road-header {
+    display: flex;
+    gap: 0.8rem;
+    align-items: baseline;
+    margin-bottom: 0.4rem;
+  }
+
+  .road-phase {
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--gold);
+    flex-shrink: 0;
+    padding: 0.2rem 0.65rem;
+    border-radius: 3px;
+    background: var(--gold-faint);
+    border: 1px solid var(--gold-dim);
+  }
+
+  .road-name {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text-bright);
+  }
+
+  .road-desc {
+    font-size: 0.94rem;
+    color: var(--text-secondary);
+    margin-top: 0.3rem;
+    line-height: 1.7;
+  }
+
+  .road-expand {
+    margin-top: 0.8rem;
+    padding: 1.1rem 1.3rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+
+  .road-expand p {
+    margin-bottom: 0.8rem;
+    font-size: 0.92rem;
+    line-height: 1.7;
+  }
+
+  .road-expand p:last-child { margin-bottom: 0; }
+
+  .road-highlight {
+    color: var(--gold);
+    font-weight: 500;
+    font-size: 0.92rem;
+    margin-top: 0.5rem;
+  }
+
+  /* ====== WIN CONDITION ====== */
+  .win {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+    margin: 2rem 0;
+    border: 1px solid var(--gold-dim);
+    border-radius: 8px;
+    background: var(--gold-faint);
+  }
+
+  .win-text {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-weight: 500;
+    font-size: 1.3rem;
+    color: var(--cream);
+    line-height: 1.5;
+  }
+
+  .win-sub {
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-top: 0.6rem;
+    display: block;
+  }
+
+  /* ====== CLOSING ====== */
+  .closing {
+    padding: 4rem 2rem;
+    max-width: 700px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .closing-name {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-weight: 500;
+    font-size: 1.5rem;
+    color: var(--text-bright);
+    margin-bottom: 1rem;
+  }
+
+  .closing-name span { color: var(--gold); }
+
+  .closing p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    max-width: 460px;
+    margin: 0 auto 0.8rem;
+  }
+
+  .closing p:last-child { margin-bottom: 0; }
+
+  .footer {
+    padding: 2rem;
+    text-align: center;
+    border-top: 1px solid var(--border);
+  }
+
+  .footer p {
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0;
+  }
+
+  /* ====== RESPONSIVE ====== */
+  @media (max-width: 640px) {
+    html { font-size: 15px; }
+    .header { padding: 3.5rem 1.5rem 1.5rem; }
+    .header-domain { font-size: 2.2rem; }
+    .opening { padding: 1rem 1.5rem 2.5rem; }
+    .section { padding: 2.5rem 1.5rem; }
+    .stack-grid { grid-template-columns: 1fr; }
+    .summary-facts { grid-template-columns: 1fr; }
+    .analogy-side { padding: 1.4rem 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ====== HEADER ====== -->
+<header class="header">
+  <span class="header-eyebrow">A scroll feed for independent cafes</span>
+  <h1 class="header-domain">cafescroll<span>.com</span></h1>
+  <p class="header-sub">The domain inspired the idea. Here's the starting point.</p>
+</header>
+
+<!-- ====== OPENING CARD ====== -->
+<div class="opening">
+  <div class="summary-card">
+    <p class="summary-pitch">Browse independent cafes visually — photos, vibes, the feeling of a space. Local spots surface first, the rest of the world behind them. Over time, the feed learns what draws your attention using the same approach <em>Spotify uses for music</em>: behavioral signals across users, not ratings or surveys. The overlap between what you pay attention to and what similar users pay attention to becomes the recommendation.</p>
+
+    <div class="summary-facts">
+      <div class="summary-fact">
+        <span class="summary-fact-label">Origin</span>
+        <span class="summary-fact-value">Unexpectedly snowy Denver day → cozy cafe mindset → "scroll" as the mechanic → cafescroll.com for ~$10</span>
+      </div>
+      <div class="summary-fact">
+        <span class="summary-fact-label">Status</span>
+        <span class="summary-fact-value">Thought-through starting point with a first roadmap. Needs building.</span>
+      </div>
+      <div class="summary-fact">
+        <span class="summary-fact-label">Platform</span>
+        <span class="summary-fact-value">Mobile-first web. No app until that's the obvious next step.</span>
+      </div>
+      <div class="summary-fact">
+        <span class="summary-fact-label">Revenue</span>
+        <span class="summary-fact-value">Multiple natural paths — cafe tools, subscriptions, direct purchasing — each adding value, not extracting it.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"><hr></div>
+
+<!-- ====== THE MODEL ====== -->
+<section class="section">
+  <span class="section-label">The model</span>
+  <h2>Spotify, but for places</h2>
+
+  <div class="analogy">
+    <div class="analogy-side">
+      <span class="analogy-side-label">Spotify</span>
+      <div class="analogy-side-headline">Figures out what music you'd like</div>
+      <div class="analogy-side-desc">Watches what you play, skip, save, and replay. Finds users with overlapping taste. The gap between your listening history and theirs becomes your <em>Discover Weekly</em>. No surveys — the algorithm learns from attention.</div>
+    </div>
+    <div class="analogy-connector">
+      <p>Same mechanism, different domain</p>
+    </div>
+    <div class="analogy-side">
+      <span class="analogy-side-label">CafeScroll</span>
+      <div class="analogy-side-headline">Figures out what cafes you'd love</div>
+      <div class="analogy-side-desc">Tracks what catches your attention — what you pause on, tap into, save. Users with similar taste patterns reveal cafes to each other. The <em>aesthetic and vibe of the space</em> is the signal, not star ratings or review text.</div>
+    </div>
+  </div>
+
+  <p>The focus is independent spots with actual character. Not chains. The individually unique places — where the light hits a specific way, where the counter wear tells you people keep coming back. The places worth discovering that you'd walk past without knowing.</p>
+
+  <div class="feeling">
+    <p>The vibe is <strong>anti-doomscroll</strong>. Browsing at a pace where the browsing itself is the point — closer to window-shopping a street you've never been down than refreshing a feed.</p>
+  </div>
+</section>
+
+<div class="divider"><hr></div>
+
+<!-- ====== WHERE THINGS STAND ====== -->
+<section class="section">
+  <span class="section-label">Where things stand</span>
+  <h2>Honest starting point</h2>
+
+  <div class="status-grid">
+    <span class="status-label">Domain</span>
+    <span class="status-value bright">cafescroll.com — owned, no prior history</span>
+
+    <span class="status-label">Content</span>
+    <span class="status-value">Google Maps has cafe photos. Cafe websites, Instagram, Yelp have more. The visual content exists scattered across the internet — it needs to be surfaced in one place.</span>
+
+    <span class="status-label">Design</span>
+    <span class="status-value">Warm, calm, not sterile. Should feel like being in a good cafe, not like using an app.</span>
+
+    <span class="status-label">Idea</span>
+    <span class="status-value">A good first map. It'll get redrawn once it hits reality — but the starting point is clear and the first steps are small.</span>
+  </div>
+
+  <div class="signal-card">
+    <span class="signal-card-label">Why this has legs</span>
+    <p>The starting point is unusually easy. A beautiful scroll feed of real cafes in one city can exist with minimal infrastructure — Google Maps API, a React frontend, and some care with the visual presentation. Each step after that has a natural incentive for someone to participate (cafe owners get free exposure, users get discovery, the platform gets content). And the recommendation model improves automatically as more people use it.</p>
+  </div>
+</section>
+
+<div class="divider"><hr></div>
+
+<!-- ====== v0 ====== -->
+<section class="section">
+  <span class="section-label">The starting point</span>
+  <h2>How little needs to happen for this to exist</h2>
+
+  <div class="spec-card">
+    <h3>v0 <span class="tag">Surprisingly small</span></h3>
+    <ul class="spec-list">
+      <li><span class="spec-bullet">→</span> Single-page scroll feed. Photos are the content. Warm aesthetic, mobile-first.</li>
+      <li><span class="spec-bullet">→</span> One city to start (Denver). Figure out the curation and data pipeline there — once it works for one city, it's repeatable anywhere.</li>
+      <li><span class="spec-bullet">→</span> Curated indie cafes with photos sourced from Google Maps, cafe websites, and anywhere else they exist online.</li>
+      <li><span class="spec-bullet">→</span> Local/global toggle — nearby by default, everywhere when you want to explore.</li>
+      <li><span class="spec-bullet">→</span> No accounts, no login, no friction.</li>
+      <li><span class="spec-bullet">→</span> Lightweight attention tracking — what users pause on, what they save. Stored locally. Seed data for the recommendation engine later.</li>
+    </ul>
+    <p class="spec-note">This is a visual platform. Even v0 has to look and feel right — can't be half-baked on the aesthetic side even if everything else is minimal.</p>
+  </div>
+
+  <div class="stack-grid">
+    <div class="stack-item">
+      <span class="stack-item-label">Frontend</span>
+      <div class="stack-item-value">React + TypeScript</div>
+      <div class="stack-item-note">Image-heavy scroll feed with room to grow</div>
+    </div>
+    <div class="stack-item">
+      <span class="stack-item-label">Content sources</span>
+      <div class="stack-item-value">Google Maps API + web scraping</div>
+      <div class="stack-item-note">Photos, locations, hours — aggregated from wherever they already exist</div>
+    </div>
+    <div class="stack-item">
+      <span class="stack-item-label">Hosting</span>
+      <div class="stack-item-value">TBD — whatever makes sense</div>
+      <div class="stack-item-note">Free tier territory for launch</div>
+    </div>
+    <div class="stack-item">
+      <span class="stack-item-label">Backend</span>
+      <div class="stack-item-value">Minimal or none for v0</div>
+      <div class="stack-item-note">Static or serverless. Real backend arrives with accounts and profiles.</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"><hr></div>
+
+<!-- ====== ROADMAP ====== -->
+<section class="section">
+  <span class="section-label">A first roadmap</span>
+  <h2>Where it goes from there</h2>
+
+  <div class="road">
+
+    <div class="road-step">
+      <div class="road-header">
+        <span class="road-phase">Start</span>
+        <span class="road-name">Visual Discovery</span>
+      </div>
+      <div class="road-desc">The scroll feed. One city, curated photos. Proves the concept works and the curation process is repeatable for other cities.</div>
+    </div>
+
+    <div class="road-step">
+      <div class="road-header">
+        <span class="road-phase">Growth</span>
+        <span class="road-name">More content, more cities</span>
+      </div>
+      <div class="road-desc">Cafe owners submit their own photos — free exposure is an obvious incentive. Users who are already posting cafe content to social media have a place to put it that's actually built for it. The content pipeline starts solving itself.</div>
+    </div>
+
+    <div class="road-step">
+      <div class="road-header">
+        <span class="road-phase">Platform</span>
+        <span class="road-name">Cafe Profiles</span>
+      </div>
+      <div class="road-desc">Owner-managed profiles with menus, hours, their own photos. Loyalty programs. Tools for the cafe-customer relationship.</div>
+      <div class="road-expand">
+        <p>This is where it stops being an aggregator and becomes a two-sided platform. The cafe has a reason to maintain their presence because it's directly useful to them. Not a listing on someone else's site — a tool they actually want to use.</p>
+      </div>
+    </div>
+
+    <div class="road-step">
+      <div class="road-header">
+        <span class="road-phase">Network</span>
+        <span class="road-name">Sister Cafes</span>
+      </div>
+      <div class="road-desc">Users with similar taste reveal cafe-to-cafe affinities. A shop in Melbourne discovers it shares a vibe-twin in Lisbon.</div>
+      <div class="road-expand">
+        <p>This falls out of the preference data naturally — the clusters self-organize. Cafe-to-cafe connections between owners who'll never compete because they're on different continents. Shared advice, tips, friendships. Travelers and digital nomads planning routes between vibe-matched spots. Content creators cafe-hopping between them — which feeds right back into growth.</p>
+        <p class="road-highlight">The feature that makes this more than a nicer Yelp. A network effect between businesses — most platforms only get that between users.</p>
+      </div>
+    </div>
+
+    <div class="road-step">
+      <div class="road-header">
+        <span class="road-phase">Revenue</span>
+        <span class="road-name">Monetization</span>
+      </div>
+      <div class="road-desc">Premium cafe tools — analytics, enhanced profiles, mobile ordering. Direct-from-cafe purchasing: see a cafe on the other side of the world, order their exact coffee to get a taste of the vibe from home. Subscriptions, merch.</div>
+      <div class="road-expand">
+        <p>Multiple revenue paths, each one useful to someone. The coffee subscription model that works for YouTubers, applied to individual cafes with actual character. Not one monetization bet — several natural ones that emerge from the platform being useful.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"><hr></div>
+
+<!-- ====== WHAT THIS NEEDS ====== -->
+<section class="section">
+  <span class="section-label">Getting started</span>
+  <h2>What this needs</h2>
+
+  <p>The idea, the domain, the product direction, the willingness to do the non-code work — curation, outreach to cafes, content, relationship-building — that's here. What's needed is someone comfortable building a React + TypeScript frontend who cares about how things look and feel.</p>
+  <p>This is a visual platform. It has to look right from day one. Mobile-first, warm aesthetic, photos as the primary content. The person building it needs to care about that part, not just make it functional.</p>
+</section>
+
+<div class="divider"><hr></div>
+
+<!-- ====== WIN CONDITION ====== -->
+<section class="section">
+  <div class="win">
+    <p class="win-text">One person visits a cafe they wouldn't have found otherwise.</p>
+    <span class="win-sub">That's the win condition. Everything after that is iteration.</span>
+  </div>
+</section>
+
+<div class="divider"><hr></div>
+
+<!-- ====== CLOSING ====== -->
+<section class="closing">
+  <div class="closing-name">cafescroll<span>.com</span></div>
+  <p>A visual discovery feed for independent cafes. An idea with a clear starting point, looking for its first build.</p>
+</section>
+
+<footer class="footer">
+  <p>V3 · March 2026 · Denver</p>
+</footer>
+
+</body>
+</html>
