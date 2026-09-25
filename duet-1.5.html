@@ -1,0 +1,2172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f6f4ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141417" media="(prefers-color-scheme: dark)">
+<title>Duet · two-phone call recorder</title>
+<style>
+:root {
+  --bg: #f6f4ef; --card: #ffffff; --ink: #1c1b19; --muted: #6b675f; --line: #e4e0d6;
+  --accent: #2f5bd3; --accent-ink: #ffffff; --rec: #d63a2f; --ok: #1f9d55; --warn: #b7791f;
+  --meter: #ece8de; --banner-bg: #fdecea; --banner-ink: #7a1d15; --banner-line: #f5c2bd;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141417; --card: #1e1e23; --ink: #f1efe9; --muted: #9d9a93; --line: #2e2e35;
+    --accent: #7b9bff; --accent-ink: #0d0d10; --rec: #ff5a4e; --ok: #3ccf7d; --warn: #f0b54a;
+    --meter: #2a2a31; --banner-bg: #3a1714; --banner-ink: #ffd2cc; --banner-line: #5b2520;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); overscroll-behavior-y: none; }
+body {
+  font: 17px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  -webkit-text-size-adjust: 100%;
+  padding: env(safe-area-inset-top) 16px calc(28px + env(safe-area-inset-bottom));
+}
+header, main { max-width: 520px; margin: 0 auto; }
+header { padding: 18px 0 4px; }
+h1 { font-size: 30px; margin: 0; letter-spacing: -0.02em; }
+h2 { font-size: 19px; margin: 0 0 8px; }
+.sub { color: var(--muted); margin: 2px 0 0; font-size: 15px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin: 12px 0; }
+.hidden { display: none !important; }
+button {
+  font: inherit; border: 0; border-radius: 12px; padding: 14px 16px; width: 100%; margin: 6px 0;
+  cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+}
+button.primary { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+button.rec { background: var(--rec); color: #fff; font-weight: 700; font-size: 19px; padding: 18px; }
+button.stop { background: var(--ink); color: var(--bg); font-weight: 700; font-size: 19px; padding: 18px; }
+button.armed { background: var(--rec); color: #fff; }
+button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--line); }
+button.small { padding: 8px 12px; font-size: 15px; width: auto; margin: 0; }
+button:disabled { opacity: .45; }
+input[type=text] {
+  font: inherit; width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--ink); margin: 0 0 6px;
+}
+label { display: block; font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+.row { display: flex; gap: 8px; }
+.row > * { flex: 1; }
+.code { font: 600 30px/1.1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .1em; margin: 4px 0 10px; }
+.status { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.dot { width: 12px; height: 12px; border-radius: 50%; background: var(--muted); flex: none; }
+.dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--rec); }
+.meter { display: grid; grid-template-columns: 72px 1fr; align-items: center; gap: 10px; margin: 10px 0; font-size: 14px; color: var(--muted); }
+.meter span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar { height: 10px; background: var(--meter); border-radius: 6px; overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0%; background: var(--ok); border-radius: 6px; }
+.timer { font: 600 46px/1 ui-monospace, "SF Mono", Menlo, monospace; text-align: center; margin: 16px 0 4px; font-variant-numeric: tabular-nums; }
+.timer.live { color: var(--rec); }
+.mini { font-size: 14px; color: var(--muted); text-align: center; min-height: 1.4em; margin: 2px 0; }
+.banner { border-radius: 14px; padding: 14px 16px; margin: 12px 0; background: var(--banner-bg); color: var(--banner-ink); border: 1px solid var(--banner-line); font-weight: 500; }
+.banner p { margin: 0 0 6px; } .banner p:last-child { margin: 0; }
+.hint { color: var(--muted); font-size: 14px; margin: 8px 0 0; }
+ul.files { list-style: none; padding: 0; margin: 0; }
+ul.files li { border-top: 1px solid var(--line); padding: 10px 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+ul.files li:first-child { border-top: 0; }
+ul.files .meta { flex: 1 1 60%; min-width: 0; font-size: 14px; }
+ul.files .meta b { display: block; font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
+ul.files .meta small { color: var(--muted); }
+a.dl { display: block; padding: 10px 0; color: var(--accent); overflow-wrap: anywhere; }
+pre { white-space: pre-wrap; word-break: break-word; font-size: 12px; line-height: 1.35; background: var(--bg); padding: 10px; border-radius: 10px; max-height: 300px; overflow: auto; }
+audio { width: 100%; margin: 8px 0; }
+details > summary { cursor: pointer; color: var(--accent); font-weight: 500; }
+.portrait { margin: 10px 0 4px; }
+.portrait img { display: block; width: 100%; height: auto; border-radius: 12px; }
+.tips { margin: 8px 0 0; padding-left: 20px; color: var(--muted); font-size: 14px; }
+.tips li { margin: 3px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Duet</h1>
+  <p class="sub">A voice call where both phones record their own side.</p>
+</header>
+
+<main>
+  <!-- Shown instead of everything else when this browser lacks what the call needs (e.g. Lockdown Mode) -->
+  <section id="blocker" class="card banner hidden" role="alert"></section>
+
+  <div id="banner" class="banner hidden" role="alert"></div>
+
+  <!-- Setup: host or guest -->
+  <section id="setup" class="card">
+    <p id="resumeHint" class="banner hidden" style="margin-top:0"></p>
+    <div id="guestIntro" class="hidden">
+      <h2 id="inviteTitle">You're invited to a recorded call</h2>
+      <p class="hint" style="margin-top:0">Both phones record their own microphone. You'll get your own audio file at the end. (It will contain a few short "whoop" chirps: sync markers for lining the two recordings up. You won't hear them during the call.)</p>
+    </div>
+    <label for="name">Your name (goes in the file name)</label>
+    <input id="name" type="text" maxlength="24" autocomplete="given-name" placeholder="e.g. Mack">
+    <button id="btnJoin" class="primary hidden">Join call</button>
+    <button id="btnHost" class="primary">Start a call</button>
+    <details id="codeBox">
+      <summary>Have a room code instead?</summary>
+      <div class="row" style="margin-top:8px">
+        <input id="codeIn" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="room code">
+        <button id="btnJoinCode" class="ghost" style="flex:0 0 auto;width:auto;margin:0 0 6px">Join</button>
+      </div>
+    </details>
+    <ul class="tips">
+      <li>Open in Safari itself (not a Home Screen icon) and allow the microphone.</li>
+      <li>Keep Safari open and the screen on. For long calls, plug in and turn off Low Power Mode.</li>
+      <li>Use the phone's speaker or wired earphones. Turn Bluetooth/AirPods off.</li>
+      <li>Only one Duet tab at a time.</li>
+    </ul>
+  </section>
+
+  <!-- Host waiting room -->
+  <section id="room" class="card hidden">
+    <label>Room code</label>
+    <div id="roomCode" class="code"></div>
+    <div class="row">
+      <button id="btnShareLink" class="primary">Send invite link</button>
+      <button id="btnCopyLink" class="ghost">Copy link</button>
+    </div>
+    <p class="hint" id="roomHint">Send the link to your friend. Keep this page open, and come straight back to Safari after sending it.</p>
+  </section>
+
+  <!-- Live call -->
+  <section id="call" class="card hidden">
+    <div class="status"><span id="connDot" class="dot"></span><span id="connText">Setting up…</span></div>
+    <div class="meter"><span>You</span><div class="bar"><i id="meMeter"></i></div></div>
+    <div class="meter"><span id="themLabel">Them</span><div class="bar"><i id="themMeter"></i></div></div>
+    <div id="timer" class="timer">00:00</div>
+    <div id="mySize" class="mini"></div>
+    <div id="peerStatus" class="mini"></div>
+    <button id="btnRec" class="rec" disabled>● Record on both phones</button>
+    <button id="btnStop" class="stop hidden">■ Stop recording</button>
+    <button id="btnHear" class="ghost hidden">Can't hear them? Tap here</button>
+    <div class="row">
+      <button id="btnReset" class="ghost">Sound problems? Reset</button>
+      <button id="btnHangup" class="ghost">Hang up</button>
+    </div>
+  </section>
+
+  <!-- Result of the latest take -->
+  <section id="done" class="card hidden">
+    <h2>Saved on this phone</h2>
+    <p id="doneInfo" class="hint" style="margin-top:0"></p>
+    <audio id="preview" controls preload="metadata"></audio>
+    <figure id="portraitFig" class="portrait hidden">
+      <img id="portraitImg" alt="">
+      <figcaption id="portraitCap" class="hint"></figcaption>
+    </figure>
+    <button id="btnSave" class="primary">Save or AirDrop the recording</button>
+    <button id="btnDownload" class="ghost">Download instead</button>
+    <div id="doneLinks" class="hidden"></div>
+    <p class="hint" id="doneHint">Sends the audio plus a small timing file (used to line the two phones' recordings up). The short "whoop" chirps in the audio are those sync markers. A copy also stays on this phone as a safety net, but Safari may clear it after about a week without visiting this page, so send the recording off the phone today.</p>
+  </section>
+
+  <!-- Everything stored in this browser (crash-safe copy) -->
+  <section id="saved" class="card hidden">
+    <h2>Recordings on this phone</h2>
+    <ul id="savedList" class="files"></ul>
+  </section>
+
+  <section class="card">
+    <details id="toolsBox">
+      <summary>Mic check &amp; diagnostics</summary>
+      <p class="hint">A 5-second test: records your mic through the same path the call uses, then plays it back.</p>
+      <button id="btnMicCheck" class="ghost">Run 5-second mic check</button>
+      <audio id="checkAudio" controls class="hidden"></audio>
+      <pre id="checkOut" class="hidden"></pre>
+      <button id="btnCopyLog" class="ghost">Copy diagnostic log</button>
+      <pre id="logOut"></pre>
+    </details>
+  </section>
+</main>
+
+<audio id="remoteAudio" autoplay playsinline></audio>
+
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js"
+        integrity="sha384-x0YgkOr/3UOZP2CRDxGW9e0Q+2Qjyr3uJrm4xU32Y7ZCNAo7Cc7bjhrZMi/dwczu"
+        crossorigin="anonymous"></script>
+<script>
+'use strict';
+
+/* =====================================================================
+   Duet: a WebRTC voice call where each phone also records locally.
+
+   Each phone's main file is STEREO:
+     left  = this phone's own microphone (clean, full quality)
+     right = the other person as heard over the call (call quality)
+   Both channels carry digital "marker" chirps injected at instants the
+   two phones agree on over the data channel: at the start, every few
+   minutes, after any interruption, and at the end. Safari builds the
+   file by counting samples, so if the audio engine stalls (screen lock,
+   phone call) that stretch is dropped from the file rather than stored
+   as silence; the matched markers let the files be re-aligned piecewise
+   afterwards. The marker is mixed in digitally, so the iPhone's echo
+   canceller can't remove it.
+
+   Rules learned from WebKit's source (see README):
+   - never connect anything to AudioContext.destination (keeps the
+     context exempt from background interruption; its output would also
+     be ducked while the mic is live). Remote audio plays through
+     <audio>, the markers go only into the recording.
+   - request the wake lock at the very top of a tap, before any await.
+   - navigator.share() must be the first async thing in its own tap.
+   ===================================================================== */
+
+const VERSION = '1.3.0';
+const CONFIG = {
+  peerPrefix: 'duet-rec-',
+  // STUN lets the phones find a direct path to each other (works on most home Wi-Fi).
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun.cloudflare.com:3478' },
+  ],
+  // Optional TURN relay for networks where a direct path is impossible (some cellular carriers).
+  // There is no working credential-free public TURN any more (PeerJS's and Open Relay's are gone),
+  // so paste your own here, e.g. from a free Metered.ca or ExpressTURN account:
+  //   { urls: 'turn:relay.example.com:3478', username: '...', credential: '...' }
+  extraIceServers: [],
+  // Or: a URL that returns a JSON array of iceServers (Metered's "TURN credentials" API URL).
+  iceServersUrl: '',
+  // iOS ignores noiseSuppression/autoGainControl; echoCancellation selects Apple's voice processing (which includes both).
+  mic: { echoCancellation: true },
+  audioSessionType: 'play-and-record',
+  timesliceMs: 2000,          // chunk size written to on-phone storage
+  markerLeadMs: 2500,         // how far ahead a shared marker is scheduled
+  markerGain: 0.1,
+  syncEveryMs: 10 * 60 * 1000, // periodic shared marker (corrects clock drift)
+  resyncMinGapMs: 8000,
+  endMarkerLeadMs: 1500,      // the end marker gets less lead than others so stopping stays quick
+  postRollMs: 2500,           // keep recording briefly after the end marker (Safari can drop the last moments)
+  bitrateMix: 96000,
+  bitrateMic: 64000,
+  backupMicRecorder: true,    // also record the raw mic (mono, no markers) as a safety net
+  clockLogEveryMs: 2000,
+};
+
+const params = new URLSearchParams(location.search);
+const FAKE_MIC = params.has('fakemic'); // test hook: synthetic tone instead of a real mic
+const $ = (id) => document.getElementById(id);
+const nowMs = () => performance.timeOrigin + performance.now();
+const sleep = (ms) => new Promise((r) => setTimeout(r, Math.max(0, ms)));
+const PAGE_T0 = nowMs();
+
+/* ---------------- logging ---------------- */
+const LOG = [];
+function fmtArg(a) {
+  if (typeof a === 'string') return a;
+  if (a instanceof Error || (a && a.name && a.message)) return `${a.name}: ${a.message}${a.type ? ' [' + a.type + ']' : ''}`;
+  try { return JSON.stringify(a); } catch { return String(a); }
+}
+function log(...args) {
+  const line = `[${((nowMs() - PAGE_T0) / 1000).toFixed(2)}] ` + args.map(fmtArg).join(' ');
+  LOG.push(line);
+  if (LOG.length > 3000) LOG.shift();
+  console.log(line);
+  if ($('toolsBox') && $('toolsBox').open) $('logOut').textContent = LOG.slice(-250).join('\n');
+}
+window.addEventListener('error', (e) => log('JS error:', e.message, e.filename + ':' + e.lineno));
+window.addEventListener('unhandledrejection', (e) => log('Unhandled rejection:', e.reason));
+
+/* ---------------- small helpers ---------------- */
+function fmtDur(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
+  const p = (n) => String(n).padStart(2, '0');
+  return h ? `${h}:${p(m)}:${p(r)}` : `${p(m)}:${p(r)}`;
+}
+function fmtBytes(b) { return b < 1e6 ? `${Math.round(b / 1e3)} KB` : `${(b / 1e6).toFixed(1)} MB`; }
+function stamp(ms) {
+  const d = new Date(ms), p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`;
+}
+function randCode(n = 6) {
+  const abc = 'abcdefghjkmnpqrstuvwxyz23456789', buf = new Uint32Array(n);
+  crypto.getRandomValues(buf);
+  return Array.from(buf, (x) => abc[x % abc.length]).join('');
+}
+function slug(s) { return (s || '').normalize('NFKD').replace(/[^\w-]+/g, '').slice(0, 24) || 'me'; }
+function show(id, on = true) { $(id).classList.toggle('hidden', !on); }
+function baseMime(m) { return (m || 'audio/mp4').split(';')[0].trim(); }
+function extFor(m) { return /webm/.test(m) ? 'webm' : /ogg/.test(m) ? 'ogg' : 'm4a'; }
+function lsGet(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } }
+function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+function ssGet(k) { try { return sessionStorage.getItem(k); } catch { return null; } }
+function ssSet(k, v) { try { sessionStorage.setItem(k, v); } catch {} }
+
+/* ---------------- state ---------------- */
+const S = {
+  role: null,            // 'host' | 'guest'
+  code: null,            // room code
+  hostId: null,          // PeerJS id of the host
+  name: lsGet('duet.name', ''),
+  peerName: params.get('from') || '',
+  peer: null, conn: null, call: null,
+  micStream: null, micTrack: null,
+  remoteStream: null,
+  ctx: null, nodes: {},
+  take: null,            // the recording in progress on this phone (see startRecordingNow)
+  takes: [],             // finished takes this page load
+  takeCounts: {},
+  stopped: new Set(lsGet('duet.stopped', [])), // sessions the user explicitly stopped
+  clock: { samples: [], offset: 0, rtt: Infinity },
+  peerHb: null, peerHbAt: 0,
+  lastMicSound: 0, lastRemoteSound: 0,
+  lastRejoinAsk: 0, lastSyncAt: 0, lastResyncAt: 0, markerSeq: 0,
+  restarting: false, frozenTicks: 0, notRunningTicks: 0, interruptTicks: 0, lastCtxTime: null,
+  guestKey: null, takenOver: false, busy: 0, peerLeft: false, lastPeerMarkAt: 0,
+  hiddenAt: 0, visibleSince: nowMs(),
+  brokerDrops: [],
+  otherTabAt: 0,
+  wakeLock: null,
+  everConnected: false,
+  hungUp: false,
+  warnings: new Map(),
+};
+
+/* ---------------- warnings banner ---------------- */
+function warn(key, text) {
+  if ((S.warnings.get(key) || null) === (text || null)) return;
+  if (text) S.warnings.set(key, text); else S.warnings.delete(key);
+  const b = $('banner');
+  b.innerHTML = '';
+  for (const t of S.warnings.values()) { const p = document.createElement('p'); p.textContent = t; b.appendChild(p); }
+  show('banner', S.warnings.size > 0);
+}
+
+/* =====================================================================
+   IndexedDB: every recorded chunk is written here as it arrives, so a
+   crash, reload or killed tab never loses more than a few seconds.
+   Chunks are stored as ArrayBuffers (more robust than Blobs on WebKit).
+   ===================================================================== */
+// Never let storage block recording: opening is time-limited, and no schema upgrades are ever needed
+// (an upgrade waits for every other open Duet tab, possibly forever). Opened without a version number
+// so any existing database is accepted as-is.
+let idbP = null, idbDownUntil = 0;
+function idb() {
+  if (nowMs() < idbDownUntil) return Promise.resolve(null); // recently failed: fail fast instead of waiting again
+  if (!idbP) {
+    const opening = new Promise((res, rej) => {
+      const r = indexedDB.open('duet');
+      r.onupgradeneeded = () => {
+        const db = r.result;
+        if (!db.objectStoreNames.contains('files')) db.createObjectStore('files', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('chunks')) db.createObjectStore('chunks');
+      };
+      r.onsuccess = () => {
+        const db = r.result;
+        db.onversionchange = () => { db.close(); idbP = null; };
+        db.onclose = () => { log('IndexedDB connection lost; will reopen'); idbP = null; };
+        res(db);
+      };
+      r.onerror = () => rej(r.error);
+      r.onblocked = () => log('IndexedDB open blocked by another tab');
+    });
+    idbP = Promise.race([opening, sleep(4000).then(() => { throw new Error('storage did not open in time'); })])
+      .catch((e) => { log('IndexedDB unavailable:', e); idbP = null; idbDownUntil = nowMs() + 20000; return null; });
+  }
+  return idbP;
+}
+async function idbReq(store, mode, fn) {
+  const db = await idb();
+  if (!db) throw new Error('storage unavailable');
+  return new Promise((res, rej) => {
+    let tx;
+    try { tx = db.transaction(store, mode); } catch (e) { idbP = null; rej(e); return; }
+    const r = fn(tx.objectStore(store));
+    tx.oncomplete = () => res(r && 'result' in r ? r.result : undefined);
+    tx.onerror = () => rej(tx.error);
+    tx.onabort = () => rej(tx.error);
+  });
+}
+const chunkRange = (fileId) => IDBKeyRange.bound(fileId + '#', fileId + '#\uffff');
+const sidecarKey = (fileId) => fileId + '@sidecar'; // lives in the chunks store, outside every chunkRange
+async function idbFileBlob(meta) {
+  const bufs = await idbReq('chunks', 'readonly', (s) => s.getAll(chunkRange(meta.id)));
+  return new Blob(bufs || [], { type: baseMime(meta.mime) });
+}
+async function idbDeleteFile(id) {
+  await idbReq('chunks', 'readwrite', (s) => s.delete(chunkRange(id)));
+  await idbReq('chunks', 'readwrite', (s) => s.delete(sidecarKey(id))).catch(() => {});
+  await idbReq('files', 'readwrite', (s) => s.delete(id));
+}
+
+/* =====================================================================
+   Microphone + audio graph
+   ===================================================================== */
+function missingFeatures() {
+  const miss = [];
+  if (!window.RTCPeerConnection) miss.push('voice calls (WebRTC)');
+  if (!FAKE_MIC && !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) miss.push('microphone access');
+  if (!(window.AudioContext || window.webkitAudioContext)) miss.push('Web Audio');
+  if (!window.MediaRecorder) miss.push('audio recording');
+  return miss;
+}
+
+async function getMicStream() {
+  if (FAKE_MIC) {
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ac.createOscillator(), g = ac.createGain(), lfo = ac.createOscillator(), lg = ac.createGain();
+    osc.frequency.value = 220 + Math.floor(Math.random() * 300);
+    lfo.frequency.value = 0.7; lg.gain.value = 0.15; g.gain.value = 0.15;
+    lfo.connect(lg); lg.connect(g.gain); osc.connect(g);
+    const d = ac.createMediaStreamDestination(); g.connect(d);
+    osc.start(); lfo.start(); ac.resume();
+    return d.stream;
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    throw new Error('This browser has no microphone access here. Open the link in Safari (https).');
+  }
+  // getUserMedia only works with audioSession 'auto' or 'play-and-record'; set it once, before capture, and leave it.
+  try { if (navigator.audioSession && CONFIG.audioSessionType && navigator.audioSession.type !== CONFIG.audioSessionType) navigator.audioSession.type = CONFIG.audioSessionType; }
+  catch (e) { log('audioSession.type failed', e); }
+  return navigator.mediaDevices.getUserMedia({ audio: CONFIG.mic, video: false });
+}
+
+function wireMicTrack(track) {
+  track.addEventListener('mute', () => {
+    if (track !== S.micTrack) return;
+    log('mic track muted'); addEvent('mic muted by iOS'); updateWarnings();
+  });
+  track.addEventListener('unmute', () => {
+    if (track !== S.micTrack) return;
+    log('mic track unmuted'); addEvent('mic unmuted'); updateWarnings();
+    requestSharedMarker('resync: mic back');
+  });
+  track.addEventListener('ended', () => {
+    if (track !== S.micTrack) return;
+    log('mic track ended'); addEvent('mic track ended');
+    // getUserMedia waits until the page is visible anyway; don't re-acquire while hidden
+    if (document.visibilityState === 'visible' && !S.hungUp) recoverMic('track ended');
+    updateWarnings();
+  });
+}
+
+async function useMicTrack(track) {
+  rewireMic();
+  const pc = S.call && S.call.peerConnection;
+  if (pc) for (const s of pc.getSenders()) { if (!s.track || s.track.kind === 'audio') await s.replaceTrack(track); }
+}
+
+async function ensureMic() {
+  if (S.micTrack && S.micTrack.readyState === 'live') return;
+  const stream = await getMicStream();
+  S.micStream = stream;
+  S.micTrack = stream.getAudioTracks()[0];
+  wireMicTrack(S.micTrack);
+  await useMicTrack(S.micTrack);
+  const st = S.micTrack.getSettings ? S.micTrack.getSettings() : {};
+  log('mic ready', { label: S.micTrack.label, sampleRate: st.sampleRate, channelCount: st.channelCount, echoCancellation: st.echoCancellation });
+}
+
+// Recording graph: mic -> left, remote -> right, markers -> both; ends ONLY at a MediaStreamAudioDestinationNode.
+function ensureGraph() {
+  if (S.ctx) return;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const ctx = new AC({ latencyHint: 'interactive' });
+  const merger = ctx.createChannelMerger(2);
+  const dest = ctx.createMediaStreamDestination();
+  dest.channelCount = 2;
+  dest.channelCountMode = 'explicit';
+  dest.channelInterpretation = 'discrete';
+  merger.connect(dest);
+  const markerBus = ctx.createGain();
+  markerBus.connect(merger, 0, 0);
+  markerBus.connect(merger, 0, 1);
+  const micAn = ctx.createAnalyser(); micAn.fftSize = 1024;
+  const remoteAn = ctx.createAnalyser(); remoteAn.fftSize = 1024;
+
+  S.ctx = ctx;
+  S.nodes = { merger, dest, markerBus, micAn, remoteAn, micSrc: null, remoteSrc: null, markerBuf: makeMarkerBuffer(ctx) };
+  let wasRunning = ctx.state === 'running';
+  ctx.onstatechange = () => {
+    if (S.ctx !== ctx) return;
+    log('AudioContext state:', ctx.state); addEvent('audio engine ' + ctx.state);
+    // A marker still waiting to play (or playing) when the engine stops will come out late: flag it for the aligner.
+    if (ctx.state !== 'running' && S.take) {
+      for (const mk of S.take.markers) if (mk.wallActual + 800 > nowMs() && !mk.suspect) { mk.suspect = true; addEvent(`marker ${mk.idx} suspect (engine stopped before it finished)`); }
+    }
+    if (ctx.state === 'running' && !wasRunning) requestSharedMarker('resync: audio resumed');
+    wasRunning = ctx.state === 'running';
+    updateWarnings();
+  };
+  rewireMic();
+  log('audio graph ready', { sampleRate: ctx.sampleRate, state: ctx.state });
+}
+
+// The marker as one precomputed, sample-exact sound: two rising exponential chirps 800 -> 3200 Hz,
+// 250 ms each, 450 ms apart, 10 ms fades, phase starting at 0 (identical every time).
+function makeMarkerBuffer(ctx) {
+  const sr = ctx.sampleRate, L = Math.round(0.25 * sr), gap = Math.round(0.45 * sr), fade = Math.round(0.01 * sr);
+  const buf = ctx.createBuffer(1, gap + L, sr), d = buf.getChannelData(0);
+  for (const off of [0, gap]) {
+    let ph = 0;
+    for (let i = 0; i < L; i++) {
+      d[off + i] = Math.sin(ph) * Math.min(1, i / fade, (L - 1 - i) / fade);
+      ph += 2 * Math.PI * 800 * Math.pow(4, i / sr / 0.25) / sr;
+    }
+  }
+  return buf;
+}
+
+function rewireMic() {
+  if (!S.ctx || !S.micTrack) return;
+  try { S.nodes.micSrc && S.nodes.micSrc.disconnect(); } catch {}
+  const src = S.ctx.createMediaStreamSource(new MediaStream([S.micTrack]));
+  src.connect(S.nodes.micAn);
+  src.connect(S.nodes.merger, 0, 0);
+  S.nodes.micSrc = src;
+}
+
+function connectRemoteToGraph(stream) {
+  if (!S.ctx || !stream) return;
+  try { S.nodes.remoteSrc && S.nodes.remoteSrc.disconnect(); } catch {}
+  try {
+    const src = S.ctx.createMediaStreamSource(stream);
+    src.connect(S.nodes.remoteAn);
+    src.connect(S.nodes.merger, 0, 1);
+    S.nodes.remoteSrc = src;
+  } catch (e) { log('could not route remote audio into recorder', e); }
+}
+
+function attachRemote(stream) {
+  if (S.remoteStream === stream) return;
+  S.remoteStream = stream;
+  const a = $('remoteAudio');
+  a.srcObject = stream;
+  a.play().then(() => show('btnHear', false)).catch((e) => { log('remote play() blocked', e); show('btnHear', true); });
+  connectRemoteToGraph(stream);
+  log('remote audio attached');
+}
+$('remoteAudio').addEventListener('pause', () => {
+  const a = $('remoteAudio');
+  if (a.srcObject && !S.hungUp) a.play().catch(() => show('btnHear', true));
+});
+
+// Safari only lets an <audio> element play sound after it has been played inside a tap.
+// The other person's stream arrives seconds after the tap, so "use up" the tap now on a
+// short silent clip; the element then stays allowed to play when the call audio arrives.
+function unlockRemoteAudio() {
+  const a = $('remoteAudio');
+  if (a.dataset.unlocked || a.srcObject) return;
+  a.dataset.unlocked = '1';
+  const n = 800, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+  const w = (o, str) => { for (let i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); };
+  w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt ');
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, 8000, true); v.setUint32(28, 16000, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  w(36, 'data'); v.setUint32(40, n * 2, true);
+  const url = URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+  a.src = url;
+  const done = () => { URL.revokeObjectURL(url); if (!a.srcObject) a.removeAttribute('src'); };
+  const p = a.play();
+  if (p && p.then) p.then(() => { log('audio output unlocked'); done(); }, (e) => { log('audio unlock failed', e); done(); });
+}
+
+// WebKit's resume() stays pending (neither resolves nor rejects) while iOS refuses audio, e.g. during a
+// phone call or Siri, so never wait on it for long: the watchdog handles a context that never runs.
+async function resumeAudio(why) {
+  const ctx = S.ctx;
+  if (ctx && ctx.state !== 'running' && ctx.state !== 'closed') {
+    try { await Promise.race([ctx.resume(), sleep(1500)]); log('AudioContext resume (' + why + '):', ctx.state); } catch (e) { log('resume failed', e); }
+  }
+  const a = $('remoteAudio');
+  if (a.srcObject && a.paused) a.play().then(() => show('btnHear', false)).catch(() => {});
+}
+
+let recovering = false;
+async function recoverMic(reason) {
+  if (recovering) return;
+  recovering = true;
+  try {
+    log('re-opening microphone:', reason);
+    const old = S.micTrack;
+    const stream = await getMicStream();
+    S.micStream = stream;
+    S.micTrack = stream.getAudioTracks()[0];
+    wireMicTrack(S.micTrack);
+    await useMicTrack(S.micTrack);
+    try { old && old !== S.micTrack && old.stop(); } catch {}
+    addEvent('mic re-opened (' + reason + ')');
+    warn('micfail', null);
+    log('microphone re-opened');
+    requestSharedMarker('resync: mic re-opened', { force: true });
+  } catch (e) {
+    log('mic recovery failed', e);
+    warn('micfail', 'Could not re-open the microphone: ' + e.message + '. Try reloading the page. Your recording so far is saved on this phone.');
+  } finally {
+    recovering = false;
+    updateWarnings();
+  }
+}
+
+function teardownMedia() {
+  try { S.micTrack && S.micTrack.stop(); } catch {}
+  for (const t of [...S.takes, ...(S.take ? [S.take] : [])]) {
+    for (const tr of t.tracks) if (tr.ownTrack && tr.mr.state === 'inactive') { try { tr.ownTrack.stop(); } catch {} }
+  }
+  const ctx = S.ctx;
+  S.ctx = null; S.nodes = {};
+  try { ctx && ctx.close(); } catch {}
+  try { if (navigator.audioSession) navigator.audioSession.type = 'auto'; } catch {}
+  try { S.wakeLock && S.wakeLock.release(); } catch {}
+  const a = $('remoteAudio');
+  a.srcObject = null;
+}
+
+/* ---------------- level meters ---------------- */
+const tdBuf = new Uint8Array(1024);
+function rms(an) {
+  an.getByteTimeDomainData(tdBuf);
+  let s = 0;
+  for (let i = 0; i < tdBuf.length; i++) { const v = (tdBuf[i] - 128) / 128; s += v * v; }
+  return Math.sqrt(s / tdBuf.length);
+}
+let lastMeter = 0;
+function meterLoop(ts) {
+  if (S.ctx && S.nodes.micAn && ts - lastMeter > 70) {
+    lastMeter = ts;
+    const me = rms(S.nodes.micAn), them = S.nodes.remoteSrc ? rms(S.nodes.remoteAn) : 0;
+    $('meMeter').style.width = Math.min(100, Math.sqrt(me) * 190) + '%';
+    $('themMeter').style.width = Math.min(100, Math.sqrt(them) * 190) + '%';
+    if (me > 0.008) S.lastMicSound = nowMs();
+    if (them > 0.008) S.lastRemoteSound = nowMs();
+  }
+  requestAnimationFrame(meterLoop);
+}
+requestAnimationFrame(meterLoop);
+
+// Loudness of both voices, four times a second while recording, for the picture on the done card.
+setInterval(() => {
+  const tk = S.take;
+  if (!tk || tk.stopping || !tk.startedWall || !S.ctx || !S.nodes.micAn) return;
+  const k = Math.floor((nowMs() - tk.startedWall) / (PORTRAIT_STEP * 1000));
+  if (k < 0 || k >= 100000) return;
+  const me = rms(S.nodes.micAn), them = S.nodes.remoteSrc ? rms(S.nodes.remoteAn) : 0;
+  if (!(tk.lvA[k] >= me)) tk.lvA[k] = me;
+  if (!(tk.lvB[k] >= them)) tk.lvB[k] = them;
+}, 125);
+
+/* ---------------- screen wake lock ---------------- */
+// The first request must happen inside a tap (call this BEFORE any await in the handler).
+async function keepAwake() {
+  if (!('wakeLock' in navigator) || document.visibilityState !== 'visible') return;
+  if (S.wakeLock && !S.wakeLock.released) return;
+  try {
+    S.wakeLock = await navigator.wakeLock.request('screen');
+    S.wakeLock.addEventListener('release', () => log('wake lock released'));
+    log('wake lock on');
+  } catch (e) { log('wake lock unavailable', e); }
+}
+
+/* =====================================================================
+   Recording
+   A "take" is one continuous recording on this phone: normally one per
+   session. A phone that reloads/rejoins mid-session, or whose audio
+   engine has to be restarted, continues in a new take ("part 2").
+   ===================================================================== */
+function pickMime() {
+  if (!window.MediaRecorder) return null;
+  // AAC/MP4 first: the only format every iOS version records, and both phones then match.
+  const cands = ['audio/mp4;codecs=mp4a.40.2', 'audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'];
+  for (const m of cands) { try { if (MediaRecorder.isTypeSupported(m)) return m; } catch {} }
+  return '';
+}
+const isRecording = () => !!(S.take && !S.take.stopping);
+function myName() { return (S.name || '').trim() || (S.role === 'guest' ? 'guest' : 'host'); }
+function newSessionId() { return stamp(nowMs()).replace('_', '-') + '-' + randCode(4); }
+function newIdx() { S.markerSeq += 1; return `${S.role || 'solo'}-${S.markerSeq}-${randCode(3)}`; }
+// Convert a time on the other phone's clock to this phone's clock.
+function toLocal(peerWall) { return peerWall - (S.clock.samples.length ? S.clock.offset : 0); }
+
+function addEvent(what) {
+  const t = S.take;
+  if (!t) return;
+  const at = t.startedWall ? (nowMs() - t.startedWall) / 1000 : 0;
+  if (t.events.length < 5000) t.events.push({ t: Math.round(at * 100) / 100, w: Math.round(nowMs()), c: S.ctx ? Math.round(S.ctx.currentTime * 1000) / 1000 : null, what });
+}
+
+function startTrack(take, kind, stream, bitrate, ownTrack) {
+  const mime = pickMime();
+  const opts = { audioBitsPerSecond: bitrate };
+  if (mime) opts.mimeType = mime;
+  let mr;
+  try { mr = new MediaRecorder(stream, opts); }
+  catch (e) { log('MediaRecorder with options failed, retrying bare', e); mr = new MediaRecorder(stream); }
+  const n = take.tracks.filter((t) => t.kind === kind).length + 1;
+  const tr = {
+    kind, n, mr, primary: false, take, ownTrack: ownTrack || null, chunks: [], chunkLog: [], bytes: 0, seq: 0, mime: mime || '',
+    lastDataWall: nowMs(), startedWall: null, stoppedWall: null,
+    id: `${take.id}_${kind}${n > 1 ? n : ''}`, idbChain: Promise.resolve(), pending: [], metaSavedAt: 0,
+    file: null, stopOnNextData: false, expectedStop: false, dead: false, idbFailed: false,
+  };
+  tr.stoppedP = new Promise((res) => {
+    mr.addEventListener('stop', () => {
+      tr.dead = true;
+      tr.stoppedWall = nowMs();
+      res();
+      // Release the private mic clone only now: ending it before 'stop' would discard the recording's tail.
+      if (tr.ownTrack) { try { tr.ownTrack.stop(); } catch {} }
+      if (!tr.expectedStop && !tr.take.stopping) onUnexpectedStop(tr.take, tr);
+    });
+  });
+  mr.addEventListener('start', () => {
+    tr.startedWall = nowMs();
+    tr.mime = mr.mimeType || tr.mime;
+    const t = tr.take;
+    if (!t.startedWall) { t.startedWall = tr.startedWall; t.startCtx = S.ctx ? S.ctx.currentTime : null; }
+    log(`recorder[${kind}] started`, tr.mime);
+    saveMeta(t, tr, false);
+  });
+  mr.addEventListener('error', (e) => { log(`recorder[${kind}] error`, e.error || e); addEvent(`recorder ${kind} error`); updateWarnings(); });
+  mr.addEventListener('dataavailable', (e) => {
+    const blob = e.data;
+    if (blob && blob.size) { // Safari can emit empty chunks; skip them
+      tr.chunks.push(blob);
+      tr.bytes += blob.size;
+      tr.lastDataWall = nowMs();
+      const seq = tr.seq++;
+      // timecode is seconds on Safari, milliseconds elsewhere; logged raw for the aligner
+      tr.chunkLog.push({ seq, w: Math.round(nowMs()), tc: typeof e.timecode === 'number' ? Math.round(e.timecode * 1000) / 1000 : null, b: blob.size });
+      tr.pending.push({ seq, blob });
+      tr.idbChain = tr.idbChain.then(() => drainChunks(tr));
+    }
+    // Stopping right after a chunk was delivered avoids WebKit's in-flight-fetch race that can lose the tail.
+    if (tr.stopOnNextData && mr.state !== 'inactive') { try { mr.stop(); } catch (err) { log('stop error', err); } }
+  });
+  mr.start(CONFIG.timesliceMs);
+  take.tracks.push(tr);
+  return tr;
+}
+
+// Write queued chunks to storage in order; a failed write stays queued and is retried with the next chunk.
+async function drainChunks(tr) {
+  while (tr.pending.length) {
+    const { seq, blob } = tr.pending[0];
+    try {
+      const buf = await blob.arrayBuffer();
+      await idbReq('chunks', 'readwrite', (s) => s.put(buf, `${tr.id}#${String(seq).padStart(6, '0')}`));
+      tr.pending.shift();
+    } catch (err) {
+      if (!tr.idbFailed) log('IndexedDB write failed (will retry)', err);
+      tr.idbFailed = true;
+      return;
+    }
+  }
+  tr.idbFailed = false;
+  await saveMeta(tr.take, tr, !!tr.file);
+}
+
+function startBackupMic(take) {
+  take.needBackup = false;
+  if (!CONFIG.backupMicRecorder || S.take !== take || take.stopping) return;
+  if (!S.micTrack || S.micTrack.readyState !== 'live') { take.needBackup = true; return; }
+  const clone = S.micTrack.clone();
+  try { startTrack(take, 'mic', new MediaStream([clone]), CONFIG.bitrateMic, clone); }
+  catch (e) { log('backup mic recorder failed', e); try { clone.stop(); } catch {} }
+}
+
+function onUnexpectedStop(take, tr) {
+  log(`recorder[${tr.kind}] stopped by itself`);
+  addEvent(`recorder ${tr.kind} stopped unexpectedly`);
+  if (S.take !== take) return;
+  if (tr.primary) restartTake('the recorder stopped by itself');
+  else take.needBackup = true; // the watchdog restarts the backup once the mic is live again
+}
+
+// Small record per file (updated with every chunk) + the timing sidecar in its own store (every 30 s and at the end).
+function saveMeta(take, tr, complete) {
+  const meta = {
+    id: tr.id, session: take.session, takeNo: take.takeNo, kind: tr.kind, primary: tr.primary,
+    name: myName(), peerName: S.peerName || '', mime: tr.mime,
+    startedWall: tr.startedWall, stoppedWall: tr.stoppedWall || take.stoppedWall, lastDataWall: tr.lastDataWall,
+    bytes: tr.bytes, complete: complete && !tr.pending.length, missingChunks: tr.pending.length, fileName: fileNameFor(take, tr),
+  };
+  const jobs = [idbReq('files', 'readwrite', (s) => s.put(meta))];
+  if (complete || nowMs() - tr.metaSavedAt > 30000) {
+    tr.metaSavedAt = nowMs();
+    const sc = sidecar(take, tr);
+    jobs.push(idbReq('chunks', 'readwrite', (s) => s.put(sc, sidecarKey(tr.id))));
+  }
+  return Promise.all(jobs).catch((e) => log('meta save failed', e));
+}
+
+function fileNameFor(take, tr) {
+  const part = take.takeNo > 1 ? `_part${take.takeNo}` : '';
+  const kind = tr.kind === 'mic' ? `_mic-only${tr.n > 1 ? tr.n : ''}` : '';
+  return `duet_${String(take.session).replace(/[^\w-]/g, '').slice(0, 40)}_${slug(myName())}${part}${kind}.${extFor(tr.mime)}`;
+}
+
+function sidecar(take, tr) {
+  const r3 = (x) => Math.round(x * 1000) / 1000;
+  const isMix = tr.kind === 'mix';
+  return {
+    app: 'duet', version: VERSION, session: take.session, part: take.takeNo, file: fileNameFor(take, tr), kind: tr.kind,
+    me: myName(), them: S.peerName || null, role: S.role,
+    channels: isMix
+      ? { left: 'me (this phone\'s microphone)', right: 'them (as heard over the call)' }
+      : { mono: 'me (this phone\'s microphone; backup recording, no markers)' },
+    mimeType: tr.mime, bytes: tr.bytes,
+    recorderStartWallMs: tr.startedWall ? Math.round(tr.startedWall) : null,
+    recorderStopWallMs: tr.stoppedWall ? Math.round(tr.stoppedWall) : null,
+    markerShape: 'precomputed buffer: two rising exponential chirps 800->3200 Hz (phase starts at 0), 250 ms each with 10 ms fades, 450 ms apart, amplitude 0.1, on both channels',
+    note: 'Safari builds the file by counting samples: if the audio engine stalled, that stretch is missing from the file (not silent). Pair markers across the two files by idx and map time piecewise between them.',
+    markers: isMix ? take.markers.map((m) => ({
+      kind: m.kind, idx: m.idx, wallMs: Math.round(m.wallActual),
+      approxSecInFile: take.startCtx != null ? r3(m.ctxTime - take.startCtx) : null,
+      leadMs: m.leadMs, engine: m.ctxState, suspect: !!m.suspect,
+    })) : [],
+    clock: { offsetToPeerMs: Math.round(S.clock.offset), bestRttMs: isFinite(S.clock.rtt) ? Math.round(S.clock.rtt) : null, samples: S.clock.samples.length },
+    clockLogKeys: { w: 'page clock ms (timeOrigin + performance.now; pauses while the phone sleeps)', d: 'Date.now() ms', c: 'AudioContext.currentTime s', s: 'engine state', v: 'page visible', m: 'mic muted' },
+    clockLog: take.clockLog,
+    chunks: tr.chunkLog,
+    events: take.events,
+    userAgent: navigator.userAgent,
+  };
+}
+
+let startingP = null;
+function startRecording(opts) {
+  if (isRecording()) return Promise.resolve(S.take);
+  if (!startingP) startingP = startRecordingNow(opts).finally(() => { startingP = null; render(); });
+  return startingP;
+}
+async function startRecordingNow({ session, markerWall, markerIdx, markerKind, via, peerSession, peerSessions, carryTracks }) {
+  await resumeAudio('start recording'); // bounded; recorders start whatever the engine state
+  if (!window.MediaRecorder) throw new Error('This browser cannot record audio (no MediaRecorder).');
+  if (!S.nodes.dest) throw new Error('Audio is not set up yet.');
+  // Part number survives reloads: count this session's earlier parts already stored on this phone.
+  let stored = 0;
+  try {
+    const all = await Promise.race([idbReq('files', 'readonly', (s) => s.getAll()), sleep(1500).then(() => [])]);
+    stored = (all || []).filter((m) => m.session === session && m.kind !== 'mic' && m.name === myName()).length;
+  } catch {}
+  const takeNo = Math.max((S.takeCounts[session] || 0) + 1, stored + 1);
+  S.takeCounts[session] = takeNo;
+  const take = {
+    // id must be unique per recording, or a rejoin after reload would overwrite the earlier part's chunks
+    session, takeNo, via, id: `${session}_${slug(myName())}_${takeNo}_${randCode(5)}`,
+    markers: [], events: [], tracks: [], clockLog: [], peerSessions: new Set([...(peerSessions || []), ...(peerSession ? [peerSession] : [])]),
+    startedWall: null, stoppedWall: null, startCtx: null, stopping: false, needBackup: false, needMarker: false,
+    endMarkerWall: null, lastClockLog: 0, finishP: null, shared: false, lvA: [], lvB: [],
+  };
+  S.take = take;
+  S.lastRejoinAsk = S.lastSyncAt = nowMs();
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().then((r) => log('persistent storage:', r)).catch(() => {});
+  try {
+    startTrack(take, 'mix', S.nodes.dest.stream, CONFIG.bitrateMix).primary = true;
+  } catch (e) {
+    log('mixed recorder failed, falling back to raw mic', e);
+    addEvent('fell back to mic-only recorder');
+    const clone = S.micTrack.clone();
+    try { startTrack(take, 'mic', new MediaStream([clone]), CONFIG.bitrateMic, clone).primary = true; }
+    catch (e2) { try { clone.stop(); } catch {} S.take = null; render(); throw e2; }
+  }
+  warn('recfail', null); warn('restart', null);
+  // A restart keeps the still-healthy backup recorder running instead of stopping and restarting it.
+  for (const tr of carryTracks || []) { tr.take = take; take.tracks.push(tr); }
+  if (take.tracks[0].kind === 'mix' && !take.tracks.some((t) => t.kind === 'mic')) startBackupMic(take);
+  scheduleMarker(take, markerWall, markerKind, markerIdx);
+  keepAwake();
+  render();
+  return take;
+}
+
+// Two short rising chirps, mixed digitally into both channels of the recording only.
+function scheduleMarker(take, wallT, kind, idx) {
+  const ctx = S.ctx, bus = S.nodes.markerBus;
+  if (!take || !ctx || !bus) return null;
+  if (!Number.isFinite(wallT)) wallT = nowMs() + 500;
+  const lead = (wallT - nowMs()) / 1000;
+  // A marker that can't be placed at the agreed instant must not be placed at all: the other phone's copy
+  // would be paired with it. Ask for a fresh shared marker instead once the engine runs.
+  if (lead < -0.2 || lead > 30 || ctx.state !== 'running' || take.markers.length >= 1000) {
+    addEvent(`marker ${idx} (${kind}) skipped: ${ctx.state !== 'running' ? 'audio engine ' + ctx.state : 'arrived ' + Math.round(-lead * 1000) + ' ms late'}`);
+    log('marker skipped', kind, idx, Math.round(lead * 1000), ctx.state);
+    take.needMarker = true;
+    return null;
+  }
+  const t0 = ctx.currentTime + Math.max(0.05, lead);
+  const src = ctx.createBufferSource(), g = ctx.createGain();
+  src.buffer = S.nodes.markerBuf;
+  g.gain.value = CONFIG.markerGain;
+  src.connect(g); g.connect(bus);
+  src.start(t0);
+  const mk = {
+    kind, idx, wallTarget: Math.round(wallT), wallActual: nowMs() + (t0 - ctx.currentTime) * 1000,
+    ctxTime: t0, leadMs: Math.round(lead * 1000), ctxState: ctx.state,
+  };
+  take.markers.push(mk);
+  addEvent(`marker ${idx} (${kind}), lead ${mk.leadMs} ms`);
+  log('marker scheduled', kind, idx, 'lead', mk.leadMs, 'ms');
+  // markers are rare: persist the timing file right away so a crash can't lose them
+  for (const tr of take.tracks) if (tr.kind === 'mix') { tr.metaSavedAt = 0; saveMeta(take, tr, false); }
+  return mk;
+}
+
+// Put a marker into both phones' recordings at the same instant.
+function requestSharedMarker(kind, { force = false } = {}) {
+  const take = S.take;
+  if (!take || take.stopping || S.restarting) return;
+  if (!force && nowMs() - S.lastResyncAt < CONFIG.resyncMinGapMs) return;
+  S.lastResyncAt = nowMs();
+  const idx = newIdx(), markerAt = nowMs() + CONFIG.markerLeadMs;
+  if (scheduleMarker(take, markerAt, kind, idx)) send({ t: 'mark', session: take.session, idx, kind, markerAt });
+}
+
+// Stop all of a take's recorders cleanly (post-roll, then stop right after a chunk) and build its files.
+function finishTake(take, keep = []) {
+  if (!take.finishP) take.finishP = finishTakeNow(take, keep);
+  return take.finishP;
+}
+async function finishTakeNow(take, keep) {
+  take.stopping = true;
+  render();
+  const tracks = take.tracks.filter((t) => !keep.includes(t));
+  const until = take.endMarkerWall ? take.endMarkerWall + 700 + CONFIG.postRollMs : nowMs() + 300;
+  await sleep(until - nowMs());
+  for (const tr of tracks) { tr.expectedStop = true; if (tr.mr.state !== 'inactive') tr.stopOnNextData = true; }
+  const allStopped = () => Promise.all(tracks.map((t) => t.stoppedP));
+  await Promise.race([allStopped(), sleep(CONFIG.timesliceMs + 2500)]);
+  for (const tr of tracks) { if (tr.mr.state !== 'inactive') { try { tr.mr.stop(); } catch (e) { log('stop error', e); } } }
+  await Promise.race([allStopped(), sleep(5000)]);
+  take.stoppedWall = nowMs();
+  take.tracks = tracks;
+  for (const tr of tracks) tr.file = new File(tr.chunks, fileNameFor(take, tr), { type: baseMime(tr.mime) });
+  // The files are complete in memory now; give the on-phone copy a few seconds to catch up (one more
+  // retry of anything still queued), but never block on it.
+  for (const tr of tracks) tr.idbChain = tr.idbChain.then(() => drainChunks(tr));
+  await Promise.race([Promise.all(tracks.map((tr) => tr.idbChain)), sleep(3000)]);
+  await Promise.race([Promise.all(tracks.map((tr) => saveMeta(take, tr, true))), sleep(3000)]);
+}
+
+function archiveTake(take, quiet) {
+  S.takes.push(take);
+  if (S.take === take) S.take = null; // a new take may already have started while this one finalized
+  if (!quiet) showDone(take);
+  render();
+  refreshSaved();
+}
+
+function markStopped(sessions) {
+  for (const x of sessions) if (typeof x === 'string') S.stopped.add(x);
+  S.stopped = new Set([...S.stopped].slice(-50));
+  lsSet('duet.stopped', [...S.stopped]);
+}
+
+async function stopRecording(reason, { notify = false, markerLocal = null } = {}) {
+  const take = S.take;
+  if (!take) return;
+  if (take.stopping) { await take.finishP; return; }
+  const sessions = [take.session, ...take.peerSessions];
+  markStopped(sessions);
+  let endAt = markerLocal;
+  if (notify) {
+    endAt = nowMs() + CONFIG.endMarkerLeadMs;
+    send({ t: 'stop', session: take.session, sessions, idx: 'end', markerAt: endAt });
+  }
+  if (endAt != null) {
+    const mk = scheduleMarker(take, endAt, 'end', 'end');
+    if (mk) take.endMarkerWall = mk.wallActual; // post-roll counts from where the marker really is
+  }
+  take.needMarker = false;
+  addEvent('stop: ' + reason);
+  log('stopping recording:', reason);
+  await finishTake(take);
+  archiveTake(take, false);
+}
+
+// The audio engine or recorder failed mid-recording: close this part and continue in a new one.
+let restartTimes = [];
+async function restartTake(reason) {
+  const old = S.take;
+  if (!old || old.stopping || S.restarting) return;
+  restartTimes = restartTimes.filter((t) => nowMs() - t < 120000);
+  if (restartTimes.length >= 3) {
+    warn('restart', 'Recording keeps failing on this phone. Try reloading the page. Everything so far is saved on this phone.');
+    return;
+  }
+  restartTimes.push(nowMs());
+  S.restarting = true;
+  try {
+    log('restarting recording as a new part:', reason);
+    addEvent('restart: ' + reason);
+    const carry = old.tracks.filter((t) => !t.primary && !t.dead); // the backup keeps running across the restart
+    await finishTake(old, carry);
+    archiveTake(old, true);
+    if (S.hungUp || [old.session, ...old.peerSessions].some((x) => S.stopped.has(x))) {
+      log('session ended during the restart; not continuing');
+      for (const tr of carry) { tr.take = old; old.tracks.push(tr); old.finishP = null; }
+      if (carry.length) { old.stopping = false; await finishTake(old); }
+      showDone(old);
+      return;
+    }
+    const prev = S.ctx;
+    S.ctx = null; S.nodes = {};
+    try { prev && prev.close(); } catch {}
+    ensureGraph();
+    connectRemoteToGraph(S.remoteStream);
+    await resumeAudio('restart');
+    const idx = newIdx(), markerAt = nowMs() + CONFIG.markerLeadMs;
+    S.restarting = false;
+    await startRecording({ session: old.session, markerWall: markerAt, markerIdx: idx, markerKind: 'restart', via: 'me', peerSessions: old.peerSessions, carryTracks: carry });
+    send({ t: 'mark', session: old.session, idx, kind: 'restart (peer)', markerAt });
+  } catch (e) {
+    log('restart failed', e);
+    warn('restart', 'Recording stopped on this phone and could not restart: ' + e.message + '. Reload the page; what was recorded is saved.');
+  } finally {
+    S.restarting = false;
+    S.frozenTicks = 0; S.notRunningTicks = 0; S.lastCtxTime = null;
+    render();
+  }
+}
+
+/* ---------------- delivering files ---------------- */
+// Must be called directly from a tap: Safari needs the tap for share() and uses it up.
+async function shareFiles(files, linksEl) {
+  files = files.filter(Boolean);
+  if (!files.length) return;
+  if (navigator.share && navigator.canShare) {
+    try {
+      if (navigator.canShare({ files })) { await navigator.share({ files }); return; }
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      log('share failed, offering downloads instead', e);
+    }
+  }
+  showDownloadLinks(linksEl, files);
+}
+function showDownloadLinks(el, files) {
+  if (!el) { files.forEach(downloadFile); return; }
+  el.innerHTML = '';
+  for (const f of files) {
+    const a = document.createElement('a');
+    a.className = 'dl'; a.href = URL.createObjectURL(f); a.download = f.name;
+    a.textContent = `⬇︎ Download ${f.name}`;
+    el.appendChild(a);
+  }
+  el.classList.remove('hidden');
+}
+function downloadFile(file) {
+  const url = URL.createObjectURL(file);
+  const a = document.createElement('a');
+  a.href = url; a.download = file.name; a.rel = 'noopener';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 120000);
+}
+function jsonFile(name, obj) {
+  return new File([JSON.stringify(obj, null, 1)], name.replace(/\.\w+$/, '') + '_timing.json', { type: 'application/json' });
+}
+
+// The done card covers EVERY part of this call on this phone (parts come from a reload/rejoin or an
+// automatic restart), from memory and from on-phone storage, so "Save" never sends just the last piece.
+async function showDone(take) {
+  const main = take.tracks.find((t) => t.primary) || take.tracks[0];
+  if (!main || !main.file) return;
+  const token = (S.doneToken = (S.doneToken || 0) + 1);
+  const mainFiles = [], backupFiles = [];
+  const memTakes = [...S.takes.filter((t) => t.session === take.session && t !== take), take].sort((a, b) => a.takeNo - b.takeNo);
+  const memIds = new Set();
+  for (const t of memTakes) for (const tr of t.tracks) {
+    if (!tr.file) continue;
+    memIds.add(tr.id);
+    if (tr.primary) mainFiles.push({ no: t.takeNo, files: [tr.file, jsonFile(tr.file.name, sidecar(t, tr))] });
+    else backupFiles.push(tr.file);
+  }
+  $('btnSave').disabled = true;
+  $('btnSave').textContent = 'Preparing…';
+  show('done', true);
+  // earlier parts from before a reload exist only in storage
+  try {
+    const metas = ((await idbReq('files', 'readonly', (s) => s.getAll())) || [])
+      .filter((m) => m.session === take.session && m.name === myName() && !memIds.has(m.id));
+    for (const m of metas) {
+      const blob = await idbFileBlob(m);
+      const f = new File([blob], m.fileName, { type: baseMime(m.mime) });
+      if (m.kind === 'mix') {
+        const sc = await loadSidecar(m);
+        mainFiles.push({ no: m.takeNo || 0, files: sc ? [f, jsonFile(m.fileName, sc)] : [f] });
+      } else backupFiles.push(f);
+    }
+  } catch (e) { log('could not gather earlier parts', e); }
+  if (token !== S.doneToken) return;
+  mainFiles.sort((a, b) => a.no - b.no);
+  const shareList = mainFiles.flatMap((x) => x.files);
+  const parts = mainFiles.length;
+  const dur = main.startedWall ? (main.stoppedWall || take.stoppedWall) - main.startedWall : 0;
+  $('doneInfo').textContent = parts > 1
+    ? `This call was recorded in ${parts} parts on this phone; Save sends all of them. Latest: ${main.file.name} · ${fmtDur(dur)}`
+    : `${main.file.name} · ${fmtDur(dur)} · ${fmtBytes(main.file.size)}` + (backupFiles.length ? ' (a mic-only backup is kept too)' : '');
+  const incomplete = memTakes.some((t) => t.tracks.some((tr) => tr.pending.length || tr.idbFailed));
+  $('done').querySelector('h2').textContent = incomplete ? 'Not fully stored on this phone: tap Save now' : 'Saved on this phone';
+  const pv = $('preview');
+  if (pv.dataset.url) URL.revokeObjectURL(pv.dataset.url);
+  pv.dataset.url = URL.createObjectURL(main.file);
+  pv.src = pv.dataset.url;
+  $('btnSave').onclick = () => { memTakes.forEach((t) => { t.shared = true; }); updateWarnings(); shareFiles(shareList, $('doneLinks')); };
+  try { showPortrait(take); } catch (e) { log('portrait failed', e); }
+  $('btnDownload').onclick = () => showDownloadLinks($('doneLinks'), [...shareList, ...backupFiles]);
+  $('btnSave').disabled = false;
+  $('btnSave').textContent = parts > 1 ? `Save or AirDrop all ${parts} parts` : 'Save or AirDrop the recording';
+  show('doneLinks', false);
+  $('done').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ---------------- conversation portrait ----------------
+   The shape of a conversation, drawn like tree rings: time spirals outward from the centre
+   (one ring = a few minutes). Person A's voice swells outward from the line in a warm colour,
+   person B's inward in a cool one, and where both speak at once the line glows gold.
+   Silence is just the thin line itself. */
+const PORTRAIT_THEMES = {
+  night: { bg: '#0f1216', line: 'rgba(233,228,218,0.13)', a: '#ff8a5c', b: '#4fc0e3', both: '#ffd36e', ink: '#ece6da', muted: 'rgba(236,230,218,0.52)', glow: true, grain: 0.03, grainInk: 255 },
+  paper: { bg: '#f3ede2', line: 'rgba(42,38,34,0.17)', a: '#c4532e', b: '#1f6e7a', both: '#cf961a', ink: '#2a2622', muted: 'rgba(42,38,34,0.55)', glow: false, grain: 0.05, grainInk: 40 },
+};
+const PORTRAIT_STEP = 0.25; // seconds of audio per step along the spiral
+
+// RMS per step from 16-bit PCM
+function portraitLoudness(pcm, sr) {
+  const per = Math.max(1, Math.floor(sr * PORTRAIT_STEP)), n = Math.floor(pcm.length / per), out = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    let s = 0;
+    const o = i * per;
+    for (let j = 0; j < per; j += 2) { const x = pcm[o + j] / 32768; s += x * x; }
+    out[i] = Math.sqrt(s / Math.ceil(per / 2));
+  }
+  return out;
+}
+
+// Linear RMS per step -> 0..1, relative to this person's own quiet level and loud peaks,
+// with a soft release so speech reads as brush strokes rather than static.
+function portraitShape(rms) {
+  const db = Array.from(rms, (r) => 20 * Math.log10((r || 0) + 1e-9));
+  const sorted = db.filter((d) => d > -110).sort((x, y) => x - y);
+  const out = new Float32Array(db.length);
+  if (sorted.length < 8) return out;
+  const q = (f) => sorted[Math.min(sorted.length - 1, Math.floor(f * sorted.length))];
+  const floor = q(0.15) + 8, peak = Math.max(q(0.985), floor + 12);
+  let prev = 0;
+  for (let i = 0; i < db.length; i++) {
+    let v = Math.min(1, Math.max(0, (db[i] - floor) / (peak - floor)));
+    v = Math.max(Math.pow(v, 0.85), prev * 0.55);
+    out[i] = prev = v;
+  }
+  return out;
+}
+
+function portraitRing(dur) {
+  for (const c of [5, 10, 20, 30, 60, 120, 180, 300, 600, 900, 1200, 1800]) if (dur / c <= 9) return c;
+  return 3600;
+}
+function portraitClock(sec) {
+  const s = Math.round(sec), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
+  return h ? `${h}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}` : `${m}:${String(r).padStart(2, '0')}`;
+}
+
+// g: 2D context of a size x size canvas. a, b: 0..1 per step. meta: { nameA, nameB, date }.
+function drawPortrait(g, size, a, b, meta, themeName) {
+  const T = PORTRAIT_THEMES[themeName] || PORTRAIT_THEMES.night;
+  const n = Math.max(a.length, b.length), dur = Math.max(1, n * PORTRAIT_STEP);
+  const ring = portraitRing(dur), rings = Math.max(1, Math.ceil(dur / ring - 1e-9));
+  const cx = size / 2, cy = size * 0.485, r0 = size * 0.095, R = size * 0.425;
+  const gap = (R - r0) / Math.max(rings, 4), h = gap * 0.46; // short calls stay a small, tight spiral
+  const at = (t, off) => {
+    const th = -Math.PI / 2 + 2 * Math.PI * (t / ring), r = r0 + gap * (t / ring) + off;
+    return [cx + r * Math.cos(th), cy + r * Math.sin(th)];
+  };
+  const serif = '"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif';
+  g.save();
+  g.fillStyle = T.bg;
+  g.fillRect(0, 0, size, size);
+  g.lineJoin = 'round'; g.lineCap = 'round';
+
+  // the thread of time
+  g.strokeStyle = T.line;
+  g.lineWidth = Math.max(1, size / 1500);
+  g.beginPath();
+  for (let i = 0; i <= n; i++) { const [x, y] = at(i * PORTRAIT_STEP, 0); if (i) g.lineTo(x, y); else g.moveTo(x, y); }
+  g.stroke();
+
+  // a voice: one filled shape per stretch of speech, between the thread and the voice's edge
+  const voice = (arr, sign, color) => {
+    g.fillStyle = color;
+    let i = 0;
+    while (i < n) {
+      while (i < n && !(arr[i] > 0.03)) i++;
+      if (i >= n) break;
+      const s = i;
+      while (i < n && arr[i] > 0.03) i++;
+      g.beginPath();
+      let p = at(s * PORTRAIT_STEP, 0);
+      g.moveTo(p[0], p[1]);
+      for (let k = s; k < i; k++) {
+        const v = 0.25 * (arr[k - 1] || 0) + 0.5 * arr[k] + 0.25 * (arr[k + 1] || 0);
+        p = at((k + 0.5) * PORTRAIT_STEP, sign * v * h); g.lineTo(p[0], p[1]);
+      }
+      for (let k = i; k >= s; k--) { p = at(k * PORTRAIT_STEP, 0); g.lineTo(p[0], p[1]); }
+      g.closePath();
+      g.fill();
+    }
+  };
+  g.globalAlpha = 0.92;
+  voice(a, +1, T.a);
+  voice(b, -1, T.b);
+  g.globalAlpha = 1;
+
+  // both at once: the thread glows
+  g.strokeStyle = T.both;
+  if (T.glow) { g.shadowColor = T.both; g.shadowBlur = size / 180; }
+  const both = (i) => Math.min(a[i] || 0, b[i] || 0) >= 0.35;
+  for (let i = 0; i < n; i++) {
+    if (!both(i) || !(both(i - 1) || both(i + 1))) continue;
+    const m = Math.min(a[i], b[i]);
+    const [x0, y0] = at(i * PORTRAIT_STEP, 0), [x1, y1] = at((i + 1) * PORTRAIT_STEP, 0);
+    g.lineWidth = Math.max(1.5, m * h * 0.42);
+    g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+  }
+  g.shadowBlur = 0;
+
+  // where the conversation ended
+  const [ex, ey] = at(dur, 0);
+  g.fillStyle = T.ink;
+  g.beginPath(); g.arc(ex, ey, Math.max(2, size / 320), 0, 2 * Math.PI); g.fill();
+  g.textBaseline = 'middle';
+
+  // centre: the two names, in their colours
+  const fit = (text, max, px) => { g.font = `${px}px ${serif}`; const w = g.measureText(text).width; return w > max ? Math.floor(px * max / w) : px; };
+  const px = Math.round(size / 34);
+  g.textAlign = 'center';
+  const nameA = meta.nameA || 'A', nameB = meta.nameB || 'B', maxW = r0 * 1.75;
+  let s1 = fit(nameA, maxW, px);
+  g.font = `italic ${s1}px ${serif}`; g.fillStyle = T.a; g.fillText(nameA, cx, cy - px * 0.72);
+  g.font = `italic ${Math.round(px * 0.62)}px ${serif}`; g.fillStyle = T.muted; g.fillText('&', cx, cy + px * 0.02);
+  s1 = fit(nameB, maxW, px);
+  g.font = `italic ${s1}px ${serif}`; g.fillStyle = T.b; g.fillText(nameB, cx, cy + px * 0.78);
+
+  // footer
+  g.font = `${Math.round(size / 62)}px ${serif}`;
+  g.fillStyle = T.muted;
+  const bits = ['a conversation', meta.date, portraitClock(dur), `one ring = ${ring >= 60 ? ring / 60 + ' min' : ring + ' s'}`].filter(Boolean);
+  g.fillText(bits.join('  ·  '), cx, size * 0.955);
+  // a faint print grain
+  if (T.grain) {
+    const tile = document.createElement('canvas'); tile.width = tile.height = 256;
+    const tg = tile.getContext('2d'), img = tg.createImageData(256, 256);
+    let seed = 12345;
+    for (let i = 0; i < img.data.length; i += 4) {
+      seed = (seed * 16807) % 2147483647;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = T.grainInk;
+      img.data[i + 3] = (seed % 256) < 128 ? Math.round(255 * T.grain * (seed % 97) / 97) : 0;
+    }
+    tg.putImageData(img, 0, 0);
+    g.fillStyle = g.createPattern(tile, 'repeat');
+    g.fillRect(0, 0, size, size);
+  }
+  g.restore();
+}
+
+// A little picture of the call on the done card, from the live level meters (long-press to save it).
+function showPortrait(take) {
+  const n = Math.max(take.lvA.length, take.lvB.length);
+  if (n < 40) { show('portraitFig', false); return; } // under ~10 s: nothing to draw
+  const a = portraitShape(Float32Array.from({ length: n }, (_, i) => take.lvA[i] || 0));
+  const b = portraitShape(Float32Array.from({ length: n }, (_, i) => take.lvB[i] || 0));
+  const theme = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'night' : 'paper';
+  const c = document.createElement('canvas');
+  c.width = c.height = 1080;
+  const date = new Date(take.startedWall || Date.now()).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+  drawPortrait(c.getContext('2d'), 1080, a, b, { nameA: myName(), nameB: S.peerName || 'them', date }, theme);
+  $('portraitImg').src = c.toDataURL('image/png');
+  $('portraitImg').alt = `A picture of this call between ${myName()} and ${S.peerName || 'them'}`;
+  const col = theme === 'paper' ? ['red', 'teal'] : ['orange', 'blue'];
+  $('portraitCap').textContent = `Your call as a picture: time spirals outward from the centre; you in ${col[0]}, ${S.peerName || 'them'} in ${col[1]}, gold where you both spoke at once. Long-press to save it.`;
+  show('portraitFig', true);
+}
+
+// Timing files were kept in different places by earlier versions of this page.
+async function loadSidecar(m) {
+  if (m.sidecar) return m.sidecar; // v1.0
+  let sc = await idbReq('chunks', 'readonly', (s) => s.get(sidecarKey(m.id))).catch(() => null);
+  if (!sc) {
+    const db = await idb();
+    if (db && db.objectStoreNames.contains('sidecars')) sc = await idbReq('sidecars', 'readonly', (s) => s.get(m.id)).catch(() => null); // v1.1.1
+  }
+  return sc || null;
+}
+
+async function refreshSaved() {
+  let metas = [];
+  try { metas = (await idbReq('files', 'readonly', (s) => s.getAll())) || []; } catch (e) { log('list saved failed', e); }
+  // newest call first; within a call, parts in order with the main (stereo) file before its backup
+  metas.sort((a, b) => (b.session || '').localeCompare(a.session || '') || (a.takeNo || 0) - (b.takeNo || 0) ||
+    ((a.kind === 'mix' ? 0 : 1) - (b.kind === 'mix' ? 0 : 1)) || (a.startedWall || 0) - (b.startedWall || 0));
+  const ul = $('savedList');
+  ul.innerHTML = '';
+  for (const m of metas) {
+    if (S.take && S.take.tracks.some((t) => t.id === m.id)) continue; // still recording
+    const li = document.createElement('li');
+    const meta = document.createElement('div'); meta.className = 'meta';
+    const b = document.createElement('b'); b.textContent = m.fileName;
+    const small = document.createElement('small');
+    const end = m.stoppedWall || m.lastDataWall;
+    const dur = m.startedWall && end ? fmtDur(end - m.startedWall) : '';
+    small.textContent = `${m.startedWall ? new Date(m.startedWall).toLocaleString() : ''} · ${dur} · ${fmtBytes(m.bytes || 0)}` +
+      `${m.kind === 'mic' ? ' · backup (mic only)' : ''}${m.missingChunks ? ' · incomplete copy' : m.complete ? '' : ' · recovered'}`;
+    meta.append(b, small);
+    // Two taps: the first loads the file from storage, the second shares it (Safari needs a fresh tap for sharing).
+    const save = document.createElement('button'); save.className = m.kind === 'mic' ? 'small ghost' : 'small primary'; save.textContent = 'Prepare';
+    const links = document.createElement('div'); links.style.flexBasis = '100%';
+    let files = null;
+    save.onclick = async () => {
+      if (files) { shareFiles(files, links); return; }
+      save.disabled = true; save.textContent = 'Loading…';
+      try {
+        const blob = await idbFileBlob(m);
+        files = [new File([blob], m.fileName, { type: baseMime(m.mime) })];
+        const sc = m.kind !== 'mic' ? await loadSidecar(m) : null;
+        if (sc) files.push(jsonFile(m.fileName, sc));
+        save.textContent = 'Share';
+      } catch (e) { save.textContent = 'Failed'; log('load saved file failed', e); }
+      save.disabled = false;
+    };
+    const del = document.createElement('button'); del.className = 'small ghost'; del.textContent = 'Delete';
+    del.onclick = async () => {
+      if (!confirm(`Delete ${m.fileName} from this phone? Only do this once you've saved it somewhere.`)) return;
+      await idbDeleteFile(m.id);
+      refreshSaved();
+    };
+    li.append(meta, save, del, links);
+    ul.appendChild(li);
+  }
+  show('saved', ul.children.length > 0);
+  const recent = !S.peer && metas.find((m) => m.kind === 'mix' && !m.complete && m.lastDataWall && Date.now() - m.lastDataWall < 15 * 60000);
+  if (recent) $('resumeHint').textContent = `You were recording a few minutes ago (${recent.fileName}). It's saved below. To carry on, tap ${S.role === 'guest' ? 'Join call' : 'Start a call'} again; it continues as a new part.`;
+  show('resumeHint', !!recent);
+}
+
+/* =====================================================================
+   Connection (PeerJS: free public broker for the handshake, then the
+   audio and control messages go directly phone-to-phone)
+   ===================================================================== */
+const connOpen = () => !!(S.conn && S.conn.open);
+// A data channel can still claim 'open' for tens of seconds after its network path died.
+function connDead() { const pc = S.conn && S.conn.peerConnection; return !!pc && ['disconnected', 'failed'].includes(pc.iceConnectionState); }
+// A stable id for this guest tab, so the host can tell "the same friend rejoining" from "someone else".
+function guestKey() {
+  const k = 'duet.gk.' + S.code;
+  let gk = ssGet(k);
+  if (!gk) { gk = randCode(12); ssSet(k, gk); }
+  return gk;
+}
+function callUp() {
+  const pc = S.call && S.call.peerConnection;
+  return !!(pc && S.remoteStream && ['connected', 'completed'].includes(pc.iceConnectionState));
+}
+function send(msg) {
+  if (!connOpen()) return false;
+  try { S.conn.send(msg); return true; } catch (e) { log('send failed', e); return false; }
+}
+
+let iceServersP = null;
+function iceServers() {
+  if (!iceServersP) {
+    iceServersP = (async () => {
+      const list = [...CONFIG.iceServers, ...CONFIG.extraIceServers];
+      if (CONFIG.iceServersUrl) {
+        try {
+          const ctl = new AbortController();
+          setTimeout(() => ctl.abort(), 5000);
+          const got = await (await fetch(CONFIG.iceServersUrl, { signal: ctl.signal })).json();
+          if (Array.isArray(got)) list.push(...got);
+        } catch (e) { log('could not fetch TURN credentials', e); }
+      }
+      S.hasTurn = list.some((s) => [].concat(s.urls).some((u) => /^turns?:/.test(u)));
+      log('ICE servers:', list.length, S.hasTurn ? '(with TURN relay)' : '(no TURN relay)');
+      return list;
+    })();
+  }
+  return iceServersP;
+}
+
+async function makePeer(id, token) {
+  const servers = await iceServers();
+  return new Promise((resolve, reject) => {
+    if (!window.Peer) { reject(new Error('Could not load the connection library (PeerJS). Check your internet connection and reload.')); return; }
+    const opts = { config: { iceServers: servers }, debug: 1 };
+    if (token) opts.token = token; // same token lets a reloaded page take its room id straight back
+    const p = id ? new Peer(id, opts) : new Peer(opts);
+    let opened = false, retryMs = 2000;
+    const openTimer = setTimeout(() => {
+      if (opened) return;
+      try { p.destroy(); } catch {}
+      reject(new Error('The connection service isn\'t answering. Check your internet and try again.'));
+    }, 20000);
+    p.on('open', (pid) => {
+      retryMs = 2000;
+      warn('broker', null);
+      if (!opened) { opened = true; clearTimeout(openTimer); log('connected to broker as', pid); resolve(p); }
+      else log('reconnected to broker');
+    });
+    // The public broker hands our id to a newer connection with the same token ("ID-TAKEOVER"); PeerJS ignores that message.
+    try { p.socket.on('message', (m) => { if (m && m.type === 'ID-TAKEOVER') { S.takenOver = true; log('room taken over by another tab/device'); } }); } catch {}
+    p.on('error', (err) => {
+      log('peer error', err);
+      if (!opened) { clearTimeout(openTimer); try { p.destroy(); } catch {} reject(err); return; }
+      if (err.type === 'unavailable-id') S.takenOver = true;
+      onPeerError(err);
+    });
+    p.on('disconnected', () => {
+      if (!opened || S.hungUp || p.destroyed) return;
+      log('lost broker connection');
+      if (S.takenOver) {
+        warn('broker', 'This room was opened in another tab or on another device, so this page stepped aside. Close the other one and reload here. (An ongoing call and recording continue.)');
+        return;
+      }
+      warn('broker', 'Can\'t reach the connection service right now; retrying… (an ongoing call and recording continue)');
+      const delay = retryMs;
+      retryMs = Math.min(30000, retryMs * 2);
+      setTimeout(() => { if (!p.destroyed && p.disconnected && !S.hungUp) { log('reconnecting to broker'); try { p.reconnect(); } catch (e) { log(e); } } }, delay);
+    });
+    p.on('close', () => log('peer closed'));
+  });
+}
+function kickBroker(why) {
+  const p = S.peer;
+  if (p && p.disconnected && !p.destroyed && !S.hungUp && !S.takenOver) { log('reconnecting to broker:', why); try { p.reconnect(); } catch {} }
+}
+window.addEventListener('online', () => kickBroker('network back'));
+
+function onPeerError(err) {
+  if (err.type === 'peer-unavailable') {
+    S.hostMissing = true;
+    if (S.role === 'guest') {
+      setConn('warn', `Waiting for ${S.peerName || 'the host'} to open the room…`);
+      scheduleDial('host not online yet', 4000, true);
+    }
+  } else if (['network', 'server-error', 'socket-error', 'socket-closed'].includes(err.type)) {
+    if (S.role === 'guest') scheduleDial(err.type, 4000);
+  }
+}
+
+function adoptConn(conn) {
+  const old = S.conn;
+  S.conn = conn;
+  if (old && old !== conn) { try { old.close(); } catch {} }
+  conn.on('open', () => {
+    if (S.conn !== conn) return;
+    log('data channel open');
+    send({ t: 'hello', name: myName(), role: S.role, v: VERSION });
+    burstPings();
+    render();
+  });
+  conn.on('data', (m) => { if (S.conn === conn) onMessage(m); });
+  conn.on('close', () => { log('data channel closed'); if (S.conn === conn) { S.conn = null; render(); if (S.role === 'guest') scheduleDial('data closed', 1500, true); } });
+  conn.on('error', (e) => log('data channel error', e));
+}
+
+function noPathWarning() {
+  warn('nopath', S.hasTurn
+    ? 'The phones can\'t reach each other right now. Check both have internet; still retrying…'
+    : 'The two phones can\'t find a direct path to each other (common when one is on cellular data). Try putting both phones on Wi-Fi. Still retrying…');
+}
+
+function adoptCall(call) {
+  const old = S.call;
+  S.call = call;
+  if (old && old !== call) { try { old.close(); } catch {} }
+  call.on('stream', (rs) => {
+    if (S.call !== call) return;
+    attachRemote(rs);
+    render();
+  });
+  call.on('close', () => {
+    log('call closed');
+    if (S.call !== call) return;
+    S.call = null; S.remoteStream = null;
+    render();
+    if (S.role === 'guest') scheduleDial('call closed', 1500, true);
+  });
+  call.on('error', (e) => log('call error', e));
+  const watchIce = () => {
+    const pc = call.peerConnection;
+    if (!pc) { setTimeout(watchIce, 200); return; }
+    // addEventListener, never pc.oniceconnectionstatechange: PeerJS uses that property itself
+    pc.addEventListener('iceconnectionstatechange', () => {
+      const st = pc.iceConnectionState;
+      log('ICE:', st);
+      if (S.call !== call) return;
+      addEvent('call ' + st);
+      if (st === 'connected' || st === 'completed') { S.everConnected = true; S.iceFailures = 0; warn('nopath', null); }
+      if (st === 'failed') {
+        S.iceFailures = (S.iceFailures || 0) + 1;
+        if (!S.everConnected || S.iceFailures >= 2) noPathWarning();
+      }
+      render();
+      if (st === 'failed' && S.role === 'guest') scheduleDial('ICE failed', 500, true);
+      if (st === 'disconnected') {
+        setTimeout(() => { if (S.call === call && pc.iceConnectionState === 'disconnected' && S.role === 'guest') scheduleDial('ICE stuck disconnected', 0, true); }, 6000);
+      }
+    });
+  };
+  watchIce();
+}
+
+// Guest side owns reconnection: it (re)dials the host whenever the call or data channel is down.
+// An attempt in progress is left alone for DIAL_PATIENCE_MS unless something definitely failed (force).
+const DIAL_PATIENCE_MS = 15000;
+let dialTimer = null, dialWatch = null, dialAt = 0, dialForce = false;
+function scheduleDial(reason, delay, force = false) {
+  if (S.role !== 'guest' || S.hungUp) return;
+  if (S.busy && nowMs() < S.busy) delay = Math.max(delay, S.busy - nowMs()); // someone else is in the call: back off
+  dialForce = dialForce || force;
+  if (dialTimer) return;
+  log('redial in', delay, 'ms:', reason);
+  dialTimer = setTimeout(() => { dialTimer = null; const f = dialForce; dialForce = false; dial(f); }, delay);
+}
+function dial(force = false) {
+  const p = S.peer;
+  if (!p || p.destroyed || S.hungUp) return;
+  // PeerJS silently drops offers sent while the broker socket isn't open, so wait for it.
+  if (!p.open) { if (p.disconnected) kickBroker('dial'); scheduleDial('waiting for broker', 2000, force); return; }
+  const stale = force || nowMs() - dialAt > DIAL_PATIENCE_MS;
+  const md = { gk: guestKey() };
+  if ((!connOpen() || connDead()) && (stale || !S.conn || connDead())) {
+    log('opening data channel to', S.hostId);
+    adoptConn(p.connect(S.hostId, { reliable: true, serialization: 'json', metadata: md }));
+  }
+  if (!callUp() && (stale || !S.call)) {
+    log('calling', S.hostId);
+    S.remoteStream = null;
+    adoptCall(p.call(S.hostId, S.micStream, { metadata: md }));
+  }
+  dialAt = nowMs();
+  S.hostMissing = false;
+  clearTimeout(dialWatch);
+  dialWatch = setTimeout(() => {
+    if (callUp() && connOpen()) return;
+    if (S.busy && nowMs() < S.busy) { scheduleDial('host busy', 0, true); return; }
+    const pc = S.call && S.call.peerConnection;
+    const answered = !!(pc && pc.remoteDescription);
+    log('dial timed out', { answered, ice: pc ? pc.iceConnectionState : null });
+    // Only a host that answered but no audio path came up points at the network; otherwise their page isn't responding.
+    if (!S.hostMissing && answered && !callUp()) noPathWarning();
+    else if (!S.hostMissing && !answered) warn('nopath', `${S.peerName || 'The host'}'s phone isn't answering yet. Ask them to open Duet in Safari and keep it on screen. Still retrying…`);
+    scheduleDial('dial timed out', 0, true);
+  }, DIAL_PATIENCE_MS);
+}
+
+/* ---------------- clock sync (NTP-style over the data channel) ---------------- */
+function burstPings() { for (let i = 0; i < 10; i++) setTimeout(() => send({ t: 'ping', a: nowMs() }), i * 150); }
+function onPong(m) {
+  if (!Number.isFinite(m.a) || !Number.isFinite(m.b)) return;
+  const t1 = nowMs(), rtt = t1 - m.a;
+  if (!(rtt >= 0 && rtt <= 5000)) return;
+  const off = m.b - (m.a + rtt / 2);
+  // If the new sample can't be reconciled with the current estimate, one phone's clock jumped
+  // (performance.now() pauses while an iPhone sleeps): start over with fresh samples.
+  if (S.clock.samples.length && Math.abs(off - S.clock.offset) > rtt / 2 + S.clock.rtt / 2 + 50) {
+    log('clock relation changed, resetting sync');
+    S.clock.samples = [];
+  }
+  S.clock.samples.push({ rtt, off, at: t1 });
+  if (S.clock.samples.length > 40) S.clock.samples.shift();
+  const best = S.clock.samples.reduce((x, y) => (y.rtt < x.rtt ? y : x));
+  S.clock.offset = best.off; // peer clock minus my clock
+  S.clock.rtt = best.rtt;
+}
+
+/* ---------------- control messages ---------------- */
+const validSession = (x) => typeof x === 'string' && /^[\w-]{1,40}$/.test(x);
+async function onMessage(m) {
+  if (!m || typeof m !== 'object' || typeof m.t !== 'string') return;
+  if (['start', 'stop', 'mark'].includes(m.t) && !validSession(m.session)) { log('ignored malformed', m.t); return; }
+  if (m.idx != null) m.idx = String(m.idx).slice(0, 40);
+  if (m.kind != null) m.kind = String(m.kind).slice(0, 40);
+  switch (m.t) {
+    case 'hello':
+      S.peerName = String(m.name || '').replace(/[\u0000-\u001f\u202a-\u202e\u2066-\u2069]/g, '').slice(0, 24) || S.peerName;
+      S.peerLeft = false;
+      log('peer says hello', { name: S.peerName, role: m.role, v: String(m.v).slice(0, 12) });
+      render();
+      break;
+    case 'busy':
+      log('host is busy with another guest');
+      S.busy = nowMs() + 30000;
+      warn('busy', 'Someone else is already in this call (maybe this link is open on another device or tab). Close it there; this page will keep trying.');
+      break;
+    case 'bye':
+      onPeerHungUp();
+      break;
+    case 'ping': send({ t: 'pong', a: m.a, b: nowMs() }); break;
+    case 'pong': onPong(m); break;
+    case 'hb':
+      S.peerHb = m; S.peerHbAt = nowMs();
+      warn('busy', null); S.busy = 0;
+      // Both phones may be recording under different session ids (e.g. each started while disconnected): link them.
+      if (m.rec && validSession(m.session) && S.take && !S.take.stopping && m.session !== S.take.session && !S.take.peerSessions.has(m.session)) {
+        S.take.peerSessions.add(m.session);
+        requestSharedMarker('sync: sessions joined', { force: true });
+      }
+      maybeResync();
+      break;
+    case 'start': {
+      if (S.stopped.has(m.session)) { log('ignoring start for a session I stopped'); send({ t: 'stop', session: m.session, sessions: [m.session] }); break; }
+      if (S.restarting) break; // our restart sends its own shared marker
+      if (startingP) { try { await startingP; } catch {} } // both tapped at once: finish ours, then treat theirs as a marker
+      const local = Number.isFinite(m.markerAt) ? toLocal(m.markerAt) : nowMs() + CONFIG.markerLeadMs;
+      if (S.take && !S.take.stopping) {
+        // Already recording (both tapped at once, or the other phone rejoined): add the same marker here too.
+        S.take.peerSessions.add(m.session);
+        scheduleMarker(S.take, local, m.rejoin ? 'rejoin (peer)' : 'start (peer)', m.idx);
+        break;
+      }
+      if (S.hungUp) break;
+      try {
+        await startRecording({ session: m.session, markerWall: local, markerIdx: m.idx, markerKind: m.rejoin ? 'rejoin (peer)' : 'start (peer)', via: 'peer', peerSession: m.session });
+        if (S.take) S.take.peerSessions.add(m.session);
+        send({ t: 'started', session: m.session, mime: S.take && S.take.tracks[0] && S.take.tracks[0].mime });
+      } catch (e) {
+        log('could not start recording', e);
+        warn('recfail', 'Recording failed to start on this phone: ' + e.message);
+        send({ t: 'started', session: m.session, error: String(e.message).slice(0, 120) });
+      }
+      break;
+    }
+    case 'mark':
+      // at most one peer marker per second, and only for a sane time
+      if (S.take && !S.take.stopping && Number.isFinite(m.markerAt) && nowMs() - (S.lastPeerMarkAt || 0) > 1000) {
+        S.lastPeerMarkAt = nowMs();
+        const kind = (m.kind || 'sync') + (/\(peer\)/.test(m.kind || '') ? '' : ' (peer)');
+        scheduleMarker(S.take, toLocal(m.markerAt), kind, m.idx);
+      }
+      break;
+    case 'started':
+      log('peer started recording', { session: m.session, error: m.error ? String(m.error).slice(0, 120) : null });
+      if (m.error) warn('peerrec', `${S.peerName || 'Their'} phone couldn't start recording: ${String(m.error).slice(0, 120)}`);
+      else warn('peerrec', null);
+      break;
+    case 'stop': {
+      const list = [m.session, ...(Array.isArray(m.sessions) ? m.sessions.filter(validSession).slice(0, 10) : [])];
+      markStopped(list);
+      const t = S.take;
+      if (t && !t.stopping && list.some((x) => x === t.session || t.peerSessions.has(x))) {
+        stopRecording('stopped by ' + (S.peerName || 'them'), { markerLocal: Number.isFinite(m.markerAt) ? toLocal(m.markerAt) : null });
+      }
+      break;
+    }
+  }
+}
+
+// The other person hung up: finish any recording cleanly, then release the mic and stop redialing.
+async function onPeerHungUp() {
+  if (S.hungUp) return;
+  log('peer hung up');
+  S.hungUp = true; S.peerLeft = true;
+  clearTimeout(dialTimer); dialTimer = null; clearTimeout(dialWatch);
+  if (isRecording()) await stopRecording('they hung up');
+  else if (S.take && S.take.finishP) await S.take.finishP;
+  try { S.call && S.call.close(); } catch {}
+  try { S.conn && S.conn.close(); } catch {}
+  try { S.peer && S.peer.destroy(); } catch {}
+  teardownMedia();
+  warn('nopath', null);
+  render();
+}
+
+// If I'm recording and the other phone isn't (it reloaded, crashed, or rejoined), bring it back in with a new shared marker.
+function maybeResync() {
+  const hb = S.peerHb, take = S.take;
+  if (!take || take.stopping || S.restarting || !hb || !connOpen()) return;
+  if (hb.rec || hb.finishing) return;
+  if (nowMs() - S.lastRejoinAsk < 10000) return;
+  S.lastRejoinAsk = nowMs();
+  const idx = newIdx(), markerAt = nowMs() + CONFIG.markerLeadMs;
+  log('peer is not recording, asking it to rejoin');
+  scheduleMarker(take, markerAt, 'rejoin', idx);
+  send({ t: 'start', session: take.session, markerAt, idx, rejoin: true });
+}
+
+/* =====================================================================
+   UI
+   ===================================================================== */
+function setConn(kind, text) {
+  $('connDot').className = 'dot ' + kind;
+  $('connText').textContent = text;
+}
+
+function render() {
+  const inCall = !!S.peer;
+  show('setup', !inCall);
+  show('room', S.role === 'host' && inCall && !S.hungUp && !(connOpen() && callUp()));
+  show('call', inCall);
+  $('themLabel').textContent = S.peerName || 'Them';
+
+  if (S.hungUp) setConn('', S.peerLeft ? `${S.peerName || 'They'} ended the call` : 'Call ended');
+  else if (callUp() && connOpen()) setConn('ok', `Connected with ${S.peerName || 'your friend'}`);
+  else if (callUp()) setConn('warn', 'Audio connected, control channel reconnecting…');
+  else if (S.everConnected) setConn('bad', 'Connection lost, reconnecting…' + (isRecording() ? ' (recording continues on this phone)' : ''));
+  else if (S.role === 'host') setConn('warn', 'Waiting for your friend to join…');
+  else setConn('warn', 'Connecting…');
+
+  const rec = isRecording(), finishing = !!(S.take && S.take.stopping);
+  show('btnRec', !rec && !finishing && !S.hungUp);
+  show('btnStop', rec || finishing);
+  $('btnRec').disabled = !S.ctx || !!startingP;
+  $('btnStop').disabled = finishing;
+  if (finishing) { $('btnStop').textContent = 'Finishing… keep this page open'; $('btnStop').classList.remove('armed'); }
+  else if (!stopArmed) $('btnStop').textContent = '■ Stop recording';
+  $('timer').classList.toggle('live', rec);
+  show('btnReset', inCall && !S.hungUp);
+  $('btnHangup').textContent = S.hungUp ? 'Start over' : 'Hang up';
+  $('btnHangup').disabled = finishing || !!S.hangingUp;
+  $('btnMicCheck').disabled = !!S.take || (inCall && !S.hungUp) || !!$('blocker').textContent;
+  tick();
+}
+
+function tick() {
+  const take = S.take;
+  if (take && take.startedWall) {
+    $('timer').textContent = fmtDur(nowMs() - take.startedWall);
+    const bytes = take.tracks.reduce((a, t) => a + t.bytes, 0);
+    $('mySize').textContent = take.stopping ? 'Finishing the file…' : `● Recording on this phone${take.takeNo > 1 ? ` (part ${take.takeNo})` : ''} · ${fmtBytes(bytes)} saved`;
+  } else if (!take) {
+    $('mySize').textContent = S.takes.length ? 'Not recording' : '';
+  }
+  const hb = S.peerHb;
+  const whose = S.peerName ? `${S.peerName}'s phone` : 'Their phone';
+  let ps = '';
+  if (!connOpen()) ps = S.everConnected ? `No contact with ${S.peerName ? S.peerName + "'s" : 'their'} phone right now` : '';
+  else if (!hb || nowMs() - S.peerHbAt > 7000) ps = `Waiting for status from ${S.peerName ? S.peerName + "'s" : 'their'} phone…`;
+  else if (hb.finishing) ps = `${whose}: finishing its file…`;
+  else if (hb.rec) ps = `${whose}: ● recording ${fmtDur(hb.sec * 1000)} · ${fmtBytes(hb.bytes || 0)}${hb.micMuted ? ' · MIC PAUSED' : ''}${hb.ctx && hb.ctx !== 'running' ? ' · audio paused' : ''}`;
+  else ps = `${whose}: connected, not recording`;
+  $('peerStatus').textContent = ps;
+}
+
+function primaryStaleMs() {
+  const take = S.take;
+  const tr = take && take.tracks.find((t) => t.primary);
+  if (!tr || tr.dead) return 0;
+  return nowMs() - Math.max(tr.lastDataWall, tr.startedWall || 0, S.visibleSince);
+}
+
+function updateWarnings() {
+  const rec = isRecording();
+  const t = S.peer && !S.hungUp ? S.micTrack : null; // after hanging up the mic is off on purpose
+  warn('mic', t && t.readyState === 'ended' ? 'Your microphone was switched off by the iPhone. Trying to re-open it…'
+    : t && t.muted ? 'iPhone has paused your microphone (screen locked, Safari in the background, another tab or app using the mic, or a phone call). Come back to Safari, close other tabs, and keep the screen on.' : null);
+  warn('ctx', S.ctx && S.ctx.state !== 'running' && (rec || S.peer) && !S.hungUp ? 'Audio is paused. Tap anywhere on the page to resume it.' : null);
+  warn('tabs', nowMs() - S.otherTabAt < 8000 ? 'Duet is also open in another Safari tab. iPhone lets only one tab use the microphone, so close the other one.' : null);
+  if (rec) {
+    const stale = document.visibilityState === 'visible' && primaryStaleMs() > Math.max(10000, CONFIG.timesliceMs * 4);
+    warn('nodata', stale ? 'This phone has stopped receiving recorded audio. Keep Safari open and the screen on; tap the page. It will restart automatically if needed.' : null);
+    // only when BOTH sides have been quiet a while (one person listening is normal)
+    const since = Math.max(S.take.startedWall || 0, S.visibleSince);
+    const quiet = nowMs() - Math.max(S.lastMicSound, since) > 60000 && nowMs() - Math.max(S.lastRemoteSound, since) > 60000;
+    warn('silent', quiet ? 'Neither microphone has picked anything up for over a minute. Is a mic muted or covered?' : null);
+    const idbBad = S.take.tracks.some((tr) => tr.idbFailed);
+    warn('idb', idbBad ? 'Couldn\'t keep the crash-safe copy on this phone (storage full, or blocked by another Duet tab). The recording itself is fine in memory: don\'t close this page until you\'ve saved it.' : null);
+  } else {
+    warn('nodata', null); warn('silent', null);
+    const unsaved = S.takes.some((t) => !t.shared && t.tracks.some((tr) => tr.pending.length || tr.idbFailed));
+    warn('idb', unsaved ? 'The copy on this phone is incomplete. Tap Save now: closing this page would lose the recording.' : null);
+  }
+}
+
+// Watchdog for the audio engine while recording (runs once a second).
+function watchdog() {
+  const take = S.take;
+  if (!take || take.stopping || S.restarting || !S.ctx) return;
+  const visible = document.visibilityState === 'visible';
+  if (nowMs() - take.lastClockLog >= CONFIG.clockLogEveryMs && take.clockLog.length < 20000) {
+    take.lastClockLog = nowMs();
+    take.clockLog.push({ w: Math.round(nowMs()), d: Date.now(), c: Math.round(S.ctx.currentTime * 1000) / 1000, s: S.ctx.state, v: visible ? 1 : 0, m: S.micTrack && S.micTrack.muted ? 1 : 0 });
+  }
+  if (take.needBackup && S.micTrack && S.micTrack.readyState === 'live' && !S.micTrack.muted) startBackupMic(take);
+  if (take.needMarker && S.ctx.state === 'running' && connOpen()) { take.needMarker = false; requestSharedMarker('resync: replaces a skipped marker', { force: true }); }
+  if (!visible) { S.frozenTicks = 0; S.notRunningTicks = 0; S.lastCtxTime = null; return; }
+  const primary = take.tracks.find((t) => t.primary);
+  if (primary && primary.dead) { restartTake('main recorder dead'); return; }
+  // A phone call / Siri / alarm interrupts audio with the page still visible: WebKit resumes by itself afterwards, so just wait.
+  const interrupted = S.micTrack && S.micTrack.muted && S.ctx.state !== 'running';
+  const ct = S.ctx.currentTime;
+  S.frozenTicks = S.ctx.state === 'running' && ct === S.lastCtxTime ? S.frozenTicks + 1 : 0;
+  S.notRunningTicks = S.ctx.state === 'running' || interrupted ? 0 : S.notRunningTicks + 1;
+  S.lastCtxTime = ct;
+  if (interrupted) { if (++S.interruptTicks % 3 === 0) resumeAudio('after interruption'); return; }
+  S.interruptTicks = 0;
+  // Known WebKit bug: after returning to the foreground the engine can claim 'running' with a frozen clock.
+  if (S.frozenTicks === 3) { log('audio clock frozen, nudging'); const c = S.ctx; c.suspend().then(() => c.resume()).catch(() => {}); }
+  if (S.notRunningTicks > 0 && S.notRunningTicks % 3 === 0) resumeAudio('watchdog');
+  if (S.frozenTicks >= 8) restartTake('audio clock froze');
+  else if (S.notRunningTicks >= 12) restartTake('audio stayed paused');
+  else if (primaryStaleMs() > 25000) restartTake('recorder stopped producing data');
+}
+
+// Once a second: timers, status heartbeat to the other phone, watchdogs.
+let hbCount = 0;
+setInterval(() => {
+  tick();
+  try { watchdog(); } catch (e) { log('watchdog error', e); }
+  updateWarnings();
+  if (connOpen()) {
+    const take = S.take;
+    send({
+      t: 'hb', rec: isRecording(), finishing: !!(take && take.stopping), session: take ? take.session : null,
+      sec: take && take.startedWall ? (nowMs() - take.startedWall) / 1000 : 0,
+      bytes: take ? take.tracks.reduce((a, tr) => a + tr.bytes, 0) : 0, part: take ? take.takeNo : 0,
+      micMuted: !!(S.micTrack && S.micTrack.muted), ctx: S.ctx ? S.ctx.state : null,
+    });
+    if (hbCount++ % 3 === 0) send({ t: 'ping', a: nowMs() });
+    // periodic shared marker so clock drift between the phones can be corrected afterwards
+    const hb = S.peerHb;
+    if (S.role === 'host' && isRecording() && hb && hb.rec && nowMs() - S.lastSyncAt > CONFIG.syncEveryMs) {
+      S.lastSyncAt = nowMs();
+      requestSharedMarker('sync', { force: true });
+    }
+  }
+  if (S.role === 'guest' && S.peer && !S.hungUp && !S.busy && (!callUp() || !connOpen() || connDead()) && !dialTimer && nowMs() - dialAt > DIAL_PATIENCE_MS) scheduleDial('watchdog', 0, true);
+  if (tabs && S.peer && !S.hungUp) tabs.postMessage({ t: 'active', id: TAB_ID });
+}, 1000);
+
+/* ---------------- one tab at a time ---------------- */
+const TAB_ID = randCode(8);
+let tabs = null;
+try { tabs = new BroadcastChannel('duet-tabs'); } catch {}
+if (tabs) tabs.onmessage = (e) => { const m = e.data || {}; if (m.id !== TAB_ID && m.t === 'active') { S.otherTabAt = nowMs(); updateWarnings(); } };
+
+/* ---------------- lifecycle: visibility, taps, devices ---------------- */
+document.addEventListener('visibilitychange', () => {
+  const vis = document.visibilityState;
+  log('page', vis);
+  addEvent('page ' + vis);
+  if (vis === 'hidden') { S.hiddenAt = nowMs(); return; }
+  S.visibleSince = nowMs();
+  keepAwake();
+  resumeAudio('visible');
+  kickBroker('back in Safari');
+  S.clock.samples = []; // the phone may have slept: re-measure before the re-sync marker below
+  burstPings();
+  const wasHiddenFor = S.hiddenAt ? nowMs() - S.hiddenAt : 0;
+  setTimeout(() => {
+    if (S.micTrack && S.micTrack.readyState === 'ended' && S.peer && !S.hungUp) recoverMic('ended while hidden');
+    if (wasHiddenFor > 1000) requestSharedMarker('resync: back in Safari');
+    updateWarnings();
+  }, 1500);
+});
+document.addEventListener('pointerdown', () => { if (S.ctx) resumeAudio('tap'); }, { passive: true });
+window.addEventListener('pagehide', () => { if (isRecording()) addEvent('pagehide'); });
+window.addEventListener('beforeunload', (e) => { if (isRecording()) { e.preventDefault(); e.returnValue = ''; } }); // desktop only; iOS ignores it
+if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+  navigator.mediaDevices.addEventListener('devicechange', () => { log('audio devices changed'); addEvent('audio device changed'); });
+}
+
+/* ---------------- starting a call ---------------- */
+function inviteUrl() {
+  const u = new URL(location.href);
+  u.search = '';
+  u.hash = '';
+  u.searchParams.set('room', S.code);
+  if (S.name) u.searchParams.set('from', S.name);
+  return u.toString();
+}
+
+async function prepareAudio() {
+  S.name = $('name').value.trim();
+  lsSet('duet.name', S.name);
+  await ensureMic();
+  ensureGraph();
+  await resumeAudio('setup');
+}
+
+async function startHost(code) {
+  S.role = 'host';
+  let lastErr;
+  for (let attempt = 0; attempt < 6 && !S.peer; attempt++) {
+    S.code = code || randCode();
+    S.hostId = CONFIG.peerPrefix + S.code;
+    const tokenKey = 'duet.token.' + S.code;
+    const token = ssGet(tokenKey) || randCode(12);
+    ssSet(tokenKey, token);
+    try {
+      S.peer = await makePeer(S.hostId, token);
+    } catch (e) {
+      lastErr = e;
+      if (e.type !== 'unavailable-id') throw e;
+      if (code) { warn('setup', `Room ${code} is still held by an earlier connection; reclaiming it…`); await sleep(5000); } // our old connection may still hold it
+    }
+  }
+  warn('setup', null);
+  if (!S.peer) throw new Error(code ? `Room ${code} is still busy (open in another tab?). Wait a minute and try again.` : (lastErr && lastErr.message) || 'Could not open a room.');
+  const u = new URL(location.href); u.search = ''; u.searchParams.set('host', S.code);
+  if (FAKE_MIC) u.searchParams.set('fakemic', '1');
+  history.replaceState(null, '', u.toString());
+  $('roomCode').textContent = S.code;
+  // One guest at a time: while the current guest is alive, a different guest key is turned away.
+  const busyFor = (md) => S.guestKey && (md && md.gk) !== S.guestKey && connOpen() && nowMs() - S.peerHbAt < 10000;
+  const accept = (md) => {
+    const gk = md && typeof md.gk === 'string' ? md.gk.slice(0, 24) : null;
+    if (gk && gk !== S.guestKey) { S.guestKey = gk; S.clock = { samples: [], offset: 0, rtt: Infinity }; log('guest', gk); }
+  };
+  S.peer.on('connection', (conn) => {
+    if (S.hungUp) { try { conn.close(); } catch {} return; }
+    if (busyFor(conn.metadata)) {
+      log('turning away a second guest');
+      conn.on('open', () => { try { conn.send({ t: 'busy' }); } catch {} setTimeout(() => { try { conn.close(); } catch {} }, 500); });
+      return;
+    }
+    log('incoming data channel');
+    accept(conn.metadata);
+    adoptConn(conn);
+  });
+  S.peer.on('call', (call) => {
+    if (S.hungUp || busyFor(call.metadata)) { try { call.close(); } catch {} return; }
+    log('incoming call');
+    accept(call.metadata);
+    adoptCall(call);
+    call.answer(S.micStream);
+  });
+  render();
+}
+
+async function startGuest(code) {
+  S.role = 'guest';
+  S.code = code;
+  S.hostId = CONFIG.peerPrefix + code;
+  S.peer = await makePeer(null);
+  render();
+  dial();
+}
+
+async function guarded(btn, fn, { startsCall = false } = {}) {
+  btn.disabled = true;
+  const label = btn.textContent;
+  if (startsCall) btn.textContent = 'Connecting…';
+  warn('setup', null);
+  try { await fn(); }
+  catch (e) {
+    log('setup failed', e);
+    let msg = e && e.message ? e.message : String(e);
+    if (e && e.name === 'NotAllowedError') msg = IN_APP_BROWSER
+      ? 'Microphone access was blocked. Open this link in Safari itself (use the ••• or share menu → Open in Safari).'
+      : 'Microphone access was blocked. In Safari tap "aA" (or the page menu) → Website Settings → Microphone → Allow, then reload.';
+    warn('setup', msg);
+    if (startsCall && S.peer && !S.everConnected) { try { S.peer.destroy(); } catch {} S.peer = null; }
+    render();
+  } finally { btn.disabled = false; btn.textContent = label; render(); }
+}
+
+/* ---------------- buttons ---------------- */
+// Each call-starting tap does its tap-only work first (wake lock, audio unlock), before any await.
+const cleanCode = (x) => String(x || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12);
+$('btnHost').onclick = () => { keepAwake(); unlockRemoteAudio(); guarded($('btnHost'), async () => {
+  await prepareAudio();
+  await startHost(cleanCode(params.get('host')) || null);
+}, { startsCall: true }); };
+$('btnJoin').onclick = () => { keepAwake(); unlockRemoteAudio(); guarded($('btnJoin'), async () => {
+  await prepareAudio();
+  await startGuest(cleanCode(params.get('room')));
+}, { startsCall: true }); };
+$('btnJoinCode').onclick = () => { keepAwake(); unlockRemoteAudio(); guarded($('btnJoinCode'), async () => {
+  const code = cleanCode($('codeIn').value.trim().replace(/^.*room=/, '').split('&')[0]);
+  if (!code) throw new Error('Type the room code first.');
+  await prepareAudio();
+  await startGuest(code);
+}, { startsCall: true }); };
+$('btnShareLink').onclick = async () => {
+  const url = inviteUrl();
+  try {
+    if (navigator.share) { await navigator.share({ title: 'Duet call', text: `${S.name || 'I'} invited you to a recorded call. Open in Safari:`, url }); return; }
+  } catch (e) { if (e.name === 'AbortError') return; }
+  $('btnCopyLink').click();
+};
+$('btnCopyLink').onclick = async () => {
+  const url = inviteUrl();
+  try { await navigator.clipboard.writeText(url); $('btnCopyLink').textContent = 'Copied ✓'; }
+  catch { prompt('Copy this link:', url); }
+  setTimeout(() => { $('btnCopyLink').textContent = 'Copy link'; }, 2000);
+};
+$('btnRec').onclick = async () => {
+  keepAwake();
+  if (isRecording() || startingP) return;
+  if (!connOpen() && !confirm('The other phone isn\'t connected. Record on this phone only?')) return;
+  const session = newSessionId(), idx = newIdx(), markerAt = nowMs() + CONFIG.markerLeadMs;
+  try {
+    await startRecording({ session, markerWall: markerAt, markerIdx: idx, markerKind: 'start', via: 'me' });
+    send({ t: 'start', session, markerAt, idx });
+  } catch (e) {
+    log('start failed', e);
+    warn('recfail', 'Recording failed to start: ' + e.message);
+  }
+};
+let stopArmed = null;
+$('btnStop').onclick = () => {
+  const btn = $('btnStop');
+  if (!isRecording()) return;
+  if (!stopArmed) {
+    btn.textContent = 'Tap again to stop both phones';
+    btn.classList.add('armed');
+    stopArmed = setTimeout(() => { stopArmed = null; btn.classList.remove('armed'); render(); }, 3000);
+    return;
+  }
+  clearTimeout(stopArmed); stopArmed = null;
+  btn.classList.remove('armed');
+  stopRecording('stopped here', { notify: true });
+};
+$('btnHear').onclick = () => resumeAudio('hear button');
+$('btnReset').onclick = () => {
+  resumeAudio('reset button');
+  if (S.micTrack && S.micTrack.muted) { warn('reset', 'The iPhone is holding the mic right now (call, Siri, or another app). Try again once that ends.'); setTimeout(() => warn('reset', null), 6000); return; }
+  recoverMic('reset by user');
+};
+$('btnHangup').onclick = async () => {
+  if (S.hungUp) {
+    // Start over: the host reopens the same room, the guest rejoins it
+    location.href = location.pathname + (S.role === 'guest'
+      ? `?room=${encodeURIComponent(S.code)}${S.peerName ? '&from=' + encodeURIComponent(S.peerName) : ''}`
+      : `?host=${encodeURIComponent(S.code)}`);
+    return;
+  }
+  if (S.hangingUp || (S.take && S.take.stopping)) return;
+  if (isRecording() && !confirm('Stop recording and hang up?')) return;
+  S.hangingUp = true;
+  render();
+  try {
+    if (isRecording()) await stopRecording('hung up', { notify: true });
+    send({ t: 'bye' });
+    await sleep(300);
+    S.hungUp = true;
+    clearTimeout(dialTimer); dialTimer = null; clearTimeout(dialWatch);
+    try { S.call && S.call.close(); } catch {}
+    try { S.conn && S.conn.close(); } catch {}
+    try { S.peer && S.peer.destroy(); } catch {}
+    teardownMedia();
+    warn('nopath', null); warn('broker', null);
+  } finally { S.hangingUp = false; render(); }
+};
+$('btnCopyLog').onclick = async () => {
+  const text = diagText() + '\n\n' + LOG.join('\n');
+  try { await navigator.clipboard.writeText(text); $('btnCopyLog').textContent = 'Copied ✓'; }
+  catch { $('logOut').textContent = text; }
+  setTimeout(() => { $('btnCopyLog').textContent = 'Copy diagnostic log'; }, 2000);
+};
+$('toolsBox').addEventListener('toggle', () => { if ($('toolsBox').open) $('logOut').textContent = LOG.slice(-250).join('\n'); });
+
+/* ---------------- mic check (self-test) ---------------- */
+function diagText() {
+  const types = ['audio/mp4;codecs=mp4a.40.2', 'audio/mp4', 'audio/webm;codecs=opus', 'audio/webm']
+    .map((m) => `${m}: ${window.MediaRecorder && MediaRecorder.isTypeSupported ? MediaRecorder.isTypeSupported(m) : 'n/a'}`);
+  return [
+    `Duet ${VERSION}`, navigator.userAgent,
+    `secure context: ${window.isSecureContext}`,
+    `missing features: ${missingFeatures().join(', ') || 'none'}`,
+    `MediaRecorder: ${!!window.MediaRecorder}`, ...types,
+    `audioSession: ${navigator.audioSession ? navigator.audioSession.type : 'n/a'}`,
+    `wakeLock: ${'wakeLock' in navigator}`, `share files: ${!!navigator.canShare}`,
+    `PeerJS loaded: ${!!window.Peer}`,
+    `AudioContext: ${S.ctx ? S.ctx.state + ' @ ' + S.ctx.sampleRate + ' Hz' : 'not created'}`,
+  ].join('\n');
+}
+
+$('btnMicCheck').onclick = () => { keepAwake(); guarded($('btnMicCheck'), async () => {
+  const out = $('checkOut');
+  show('checkOut', true);
+  out.textContent = 'Starting…';
+  if (S.take) throw new Error('Mic check is off during a recording.');
+  await ensureMic(); // reuses the call's mic; never opens a second one
+  ensureGraph();
+  await resumeAudio('mic check');
+  const mime = pickMime();
+  if (mime === null) throw new Error('MediaRecorder not available in this browser.');
+  // Test tone only on the right channel so we can confirm the file really is stereo.
+  const ctx = S.ctx, osc = ctx.createOscillator(), g = ctx.createGain();
+  osc.frequency.value = 440; g.gain.value = 0.05;
+  osc.connect(g); g.connect(S.nodes.merger, 0, 1);
+  osc.start();
+  const chunks = [];
+  const mr = new MediaRecorder(S.nodes.dest.stream, mime ? { mimeType: mime, audioBitsPerSecond: CONFIG.bitrateMix } : undefined);
+  mr.ondataavailable = (e) => e.data && e.data.size && chunks.push(e.data);
+  const stopped = new Promise((r) => { mr.onstop = r; });
+  mr.start(1000);
+  let peak = 0;
+  const t0 = nowMs();
+  while (nowMs() - t0 < 5000) {
+    peak = Math.max(peak, rms(S.nodes.micAn));
+    out.textContent = `Recording… say something! ${Math.ceil((5000 - (nowMs() - t0)) / 1000)} s\nlive mic level: ${(peak * 100).toFixed(1)}`;
+    await sleep(100);
+  }
+  mr.stop();
+  await stopped;
+  osc.stop();
+  const blob = new Blob(chunks, { type: baseMime(mr.mimeType || mime) });
+  const lines = [diagText(), '', `recorder mimeType: ${mr.mimeType || '(empty)'}`, `recorded: ${fmtBytes(blob.size)} in ${chunks.length} chunks`, `live mic peak level: ${(peak * 100).toFixed(1)}`];
+  try {
+    const ab = await blob.arrayBuffer();
+    const AC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    const dec = await new AC(2, 48000, 48000).decodeAudioData(ab);
+    const chRms = [];
+    for (let c = 0; c < dec.numberOfChannels; c++) {
+      const d = dec.getChannelData(c); let s = 0;
+      for (let i = 0; i < d.length; i++) s += d[i] * d[i];
+      chRms.push(Math.sqrt(s / d.length));
+    }
+    lines.push(`decoded: ${dec.duration.toFixed(2)} s, ${dec.numberOfChannels} channel(s) @ ${dec.sampleRate} Hz`);
+    lines.push(`channel levels: ${chRms.map((x) => (x * 100).toFixed(2)).join(' / ')}`);
+    const stereoOk = dec.numberOfChannels >= 2;
+    lines.push(stereoOk ? 'stereo: OK (left = you, right = them)' : 'stereo: NO, file is mono (both voices will be mixed together)');
+    lines.push(peak > 0.01 ? 'mic: OK' : 'mic: very quiet or silent?');
+    lines.push(blob.size > 1000 && dec.duration > 3 ? 'RESULT: recording works ✓' : 'RESULT: problem, see above');
+  } catch (e) {
+    lines.push('could not decode the test file: ' + e.message);
+  }
+  out.textContent = lines.join('\n');
+  log('mic check\n' + lines.join('\n'));
+  const a = $('checkAudio');
+  a.src = URL.createObjectURL(blob);
+  show('checkAudio', true);
+}); };
+
+/* ---------------- init ---------------- */
+const IN_APP_BROWSER = /iPhone|iPad/.test(navigator.userAgent) && (!/Safari\//.test(navigator.userAgent) || /FBAN|FBAV|Instagram|GSA\/|Line\/|LinkedInApp|Snapchat|TikTok|Twitter/.test(navigator.userAgent));
+(function init() {
+  $('name').value = S.name;
+  const ua = navigator.userAgent;
+  const missing = missingFeatures();
+  if (!window.isSecureContext) {
+    warn('insecure', 'This page must be opened over https for the microphone to work.');
+  } else if (missing.length) {
+    const b = $('blocker');
+    b.innerHTML = '';
+    const add = (tag, text) => { const el = document.createElement(tag); el.textContent = text; b.appendChild(el); return el; };
+    add('h2', 'This browser has switched off what the call needs');
+    add('p', `Missing: ${missing.join(', ')}.`);
+    add('p', 'If Lockdown Mode is on (common cause): tap the page menu next to the address bar (aA) → Website Settings → turn off Lockdown Mode for this website, then reload. It only affects this site.');
+    add('p', 'Otherwise, open this link in Safari itself (not inside another app).');
+    show('blocker', true);
+    for (const id of ['btnHost', 'btnJoin', 'btnJoinCode', 'btnMicCheck']) $(id).disabled = true;
+  }
+  if (!window.Peer) warn('peerjs', 'The connection library didn\'t load. Check your internet and reload.');
+  if (IN_APP_BROWSER) warn('inapp', 'This link opened inside another app. For the call and the recording to work reliably, open it in Safari: use the app\'s ••• or share menu → Open in Safari.');
+  if (navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches)) {
+    warn('standalone', 'Open this link in Safari itself rather than from a Home Screen icon: iPhone pauses the mic for Home Screen web apps more readily.');
+  }
+  // iOS 26 reports "OS 18_6" in the user agent; the Safari version token is the reliable hint.
+  if (/iPhone|iPad/.test(ua) && /Version\/26\.[01](\D|$)/.test(ua)) {
+    warn('ios26', 'This iOS version (26.0/26.1) has a bug that can cut the end off recordings. Please update iOS before recording.');
+  }
+  const room = params.get('room');
+  if (room) {
+    S.role = 'guest';
+    show('guestIntro', true);
+    show('btnJoin', true);
+    show('btnHost', false);
+    show('codeBox', false);
+    if (S.peerName) $('inviteTitle').textContent = `${S.peerName} invited you to a recorded call`;
+  } else if (params.get('host')) {
+    $('btnHost').textContent = `Reopen room ${params.get('host')}`;
+  }
+  refreshSaved();
+  log('Duet', VERSION, ua);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1912 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f6f4ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141417" media="(prefers-color-scheme: dark)">
+<title>Duet · align recordings</title>
+<style>
+:root {
+  --bg: #f6f4ef; --card: #ffffff; --ink: #1c1b19; --muted: #6b675f; --line: #e4e0d6;
+  --accent: #2f5bd3; --accent-ink: #ffffff; --ok: #1f7a45; --warn: #a3650f; --bad: #c0352b;
+  --track: #ece8de; --partA: #2f5bd3; --partB: #b5487a; --drop: #f0ede5;
+  --banner-bg: #fdecea; --banner-ink: #7a1d15; --banner-line: #f5c2bd;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141417; --card: #1e1e23; --ink: #f1efe9; --muted: #9d9a93; --line: #2e2e35;
+    --accent: #7b9bff; --accent-ink: #0d0d10; --ok: #3ccf7d; --warn: #f0b54a; --bad: #ff6b5e;
+    --track: #2a2a31; --partA: #7b9bff; --partB: #e97fb0; --drop: #19191d;
+    --banner-bg: #3a1714; --banner-ink: #ffd2cc; --banner-line: #5b2520;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); }
+body {
+  font: 17px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", Roboto, sans-serif;
+  -webkit-text-size-adjust: 100%;
+  padding: env(safe-area-inset-top) 16px calc(28px + env(safe-area-inset-bottom));
+}
+header, main { max-width: 640px; margin: 0 auto; }
+header { padding: 18px 0 4px; }
+h1 { font-size: 28px; margin: 0; letter-spacing: -0.02em; }
+h2 { font-size: 19px; margin: 0 0 8px; }
+.sub { color: var(--muted); margin: 4px 0 0; font-size: 15px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin: 12px 0; }
+.hidden { display: none !important; }
+button {
+  font: inherit; border: 0; border-radius: 12px; padding: 13px 16px; width: 100%; margin: 6px 0;
+  cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+}
+button.primary { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--line); }
+button.small { padding: 7px 12px; font-size: 15px; width: auto; margin: 0; }
+button:disabled { opacity: .45; cursor: default; }
+button.x { background: transparent; color: var(--muted); width: 36px; height: 36px; padding: 0; margin: 0; font-size: 22px; line-height: 1; flex: none; }
+input[type=text] {
+  font: inherit; width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--ink); margin: 0;
+}
+label.lab { display: block; font-size: 14px; color: var(--muted); margin-bottom: 4px; }
+.row { display: flex; gap: 8px; align-items: stretch; }
+.row > * { flex: 1; }
+.hint { color: var(--muted); font-size: 14px; margin: 8px 0 0; }
+.drop {
+  border: 2px dashed var(--line); border-radius: 14px; padding: 22px 14px; text-align: center; background: var(--drop);
+  color: var(--muted); font-size: 15px; transition: border-color .15s, background .15s; cursor: pointer;
+}
+.drop b { display: block; color: var(--ink); font-size: 17px; margin-bottom: 4px; }
+.drop.over { border-color: var(--accent); background: transparent; }
+.status { display: flex; align-items: flex-start; gap: 10px; font-weight: 500; }
+.dot { width: 12px; height: 12px; border-radius: 50%; background: var(--muted); flex: none; margin-top: 6px; }
+.dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); }
+.dot.busy { background: var(--accent); animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .3; } }
+.progress { height: 8px; background: var(--track); border-radius: 5px; overflow: hidden; margin-top: 12px; }
+.progress > i { display: block; height: 100%; width: 0%; background: var(--accent); border-radius: 5px; transition: width .2s; }
+.progress.indet > i { width: 30%; animation: slide 1.2s ease-in-out infinite; }
+@keyframes slide { 0% { margin-left: -30%; } 100% { margin-left: 100%; } }
+ul.files { list-style: none; padding: 0; margin: 0; }
+ul.files li { border-top: 1px solid var(--line); padding: 10px 0; display: flex; gap: 8px; align-items: flex-start; }
+ul.files li:first-child { border-top: 0; }
+ul.files .meta { flex: 1; min-width: 0; font-size: 14px; }
+ul.files .meta b { display: block; font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
+ul.files .meta small { color: var(--muted); display: block; }
+.mk { display: block; margin-top: 3px; font-variant-numeric: tabular-nums; }
+.mk.ok { color: var(--ok); } .mk.warn { color: var(--warn); } .mk.bad { color: var(--bad); } .mk.busy, .mk.skip { color: var(--muted); }
+.summary { font-size: 16px; margin: 0 0 10px; }
+.timeline { margin: 14px 0 6px; }
+.tl-row { display: grid; grid-template-columns: minmax(60px, 22%) 1fr; gap: 8px; align-items: center; margin: 6px 0; font-size: 14px; }
+.tl-row > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.tl-track { position: relative; height: 18px; background: var(--track); border-radius: 5px; }
+.tl-part { position: absolute; top: 0; bottom: 0; border-radius: 4px; opacity: .85; }
+.tl-row.a .tl-part { background: var(--partA); } .tl-row.b .tl-part { background: var(--partB); }
+.tl-gap { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(45deg, var(--bad) 0 3px, transparent 3px 7px); opacity: .7; min-width: 3px; }
+.tl-mark { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--ink); }
+.tl-axis { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-left: calc(22% + 8px); }
+ul.checks { list-style: none; padding: 0; margin: 10px 0; font-size: 14px; }
+ul.checks li { margin: 6px 0; padding-left: 22px; position: relative; }
+ul.checks li::before { position: absolute; left: 0; top: 0; font-weight: 700; }
+ul.checks li.ok::before { content: "✓"; color: var(--ok); }
+ul.checks li.warn::before { content: "!"; color: var(--warn); }
+ul.checks li.info::before { content: "i"; color: var(--muted); font-style: italic; }
+.chans { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: end; margin: 14px 0 8px; }
+.chans button { margin: 0; height: 44px; }
+.opt { display: flex; gap: 8px; align-items: flex-start; font-size: 15px; margin: 10px 0; }
+.opt input { margin-top: 4px; }
+ul.out { list-style: none; padding: 0; margin: 8px 0; }
+ul.out li { display: flex; gap: 10px; align-items: center; border-top: 1px solid var(--line); padding: 8px 0; font-size: 14px; }
+ul.out li:first-child { border-top: 0; }
+ul.out a { color: var(--accent); font-weight: 600; overflow-wrap: anywhere; }
+ul.out small { color: var(--muted); display: block; }
+ul.out .grow { flex: 1; min-width: 0; }
+.banner { border-radius: 14px; padding: 14px 16px; margin: 12px 0; background: var(--banner-bg); color: var(--banner-ink); border: 1px solid var(--banner-line); font-weight: 500; font-size: 15px; }
+.banner p { margin: 0 0 6px; } .banner p:last-child { margin: 0; }
+details > summary { cursor: pointer; color: var(--accent); font-weight: 500; }
+details { margin: 4px 0; }
+details p, details li { font-size: 15px; }
+pre { white-space: pre-wrap; word-break: break-word; font: 12px/1.4 ui-monospace, "SF Mono", Menlo, monospace; background: var(--bg); padding: 10px; border-radius: 10px; overflow: auto; }
+code { font: 0.9em ui-monospace, "SF Mono", Menlo, monospace; }
+.portrait h3 { margin: 22px 0 4px; font-size: 17px; }
+.portrait canvas { display: block; width: 100%; height: auto; border-radius: 12px; margin: 10px 0 4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Duet · align recordings</h1>
+  <p class="sub">Lines up the two phones' recordings on their sync chirps and makes WAV files ready for transcription. Everything happens in this browser; nothing is uploaded.</p>
+</header>
+
+<main>
+  <div id="banner" class="banner hidden" role="alert"></div>
+
+  <section class="card" id="pickCard">
+    <div id="drop" class="drop" role="button" tabindex="0">
+      <b>Drop the recordings here</b>
+      Both people's <code>.m4a</code> / <code>.webm</code> files from Duet, any <code>_part2</code> files, and the <code>_timing.json</code> files if you have them.
+    </div>
+    <input id="fileIn" type="file" multiple accept="audio/*,video/mp4,video/webm,.m4a,.mp4,.webm,.ogg,.json,application/json" class="hidden">
+    <button id="btnPick" class="primary">Choose files</button>
+  </section>
+
+  <section class="card hidden" id="filesCard">
+    <h2>Recordings</h2>
+    <ul id="fileList" class="files"></ul>
+    <button id="btnClear" class="ghost small" style="margin-top:8px">Start over</button>
+  </section>
+
+  <section class="card" id="statusCard">
+    <div class="status"><span id="statusDot" class="dot"></span><span id="statusText" role="status" aria-live="polite">Add both people's recordings to begin.</span></div>
+    <div id="progress" class="progress hidden"><i></i></div>
+  </section>
+
+  <section class="card hidden" id="resultCard">
+    <h2>Alignment</h2>
+    <p id="summary" class="summary"></p>
+    <div id="timeline" class="timeline"></div>
+    <ul id="checks" class="checks"></ul>
+    <div class="chans">
+      <div><label class="lab" for="nameL">Left channel</label><input id="nameL" type="text" maxlength="40"></div>
+      <button id="btnSwap" class="ghost small" title="Swap left and right" aria-label="Swap left and right">⇄</button>
+      <div><label class="lab" for="nameR">Right channel</label><input id="nameR" type="text" maxlength="40"></div>
+    </div>
+    <label class="opt"><input id="optMute" type="checkbox" checked> <span>Silence the sync chirps in the exported audio (0.7 s each time they occur)</span></label>
+    <button id="btnExport" class="primary">Make WAV files</button>
+    <div id="outputs" class="hidden">
+      <ul id="outList" class="out"></ul>
+      <div class="row">
+        <button id="btnShare" class="primary hidden">Share…</button>
+        <button id="btnAll" class="ghost">Download all</button>
+      </div>
+      <p class="hint">Files are 16 kHz, 16-bit WAV. All of them share one timeline, so a moment at 12:34 is the same moment in every file.</p>
+    </div>
+    <div id="portraitBox" class="portrait hidden">
+      <h3>Conversation portrait</h3>
+      <p class="hint" id="pCaption"></p>
+      <canvas id="portraitCanvas" width="1200" height="1200" role="img" aria-label="A picture of this conversation"></canvas>
+      <div class="row">
+        <button id="btnPTheme" class="ghost">Night version</button>
+        <button id="btnPPrint" class="primary">Download print (PNG, 3600 px)</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary>How to transcribe the result</summary>
+      <p>Transcribe each person's own file separately (each one holds only that person's microphone, so no speaker detection is needed), then merge the two transcripts by time. <code>alignment.json</code> contains the exact commands; the short version:</p>
+      <pre id="howTo"></pre>
+    </details>
+    <details>
+      <summary>How this works</summary>
+      <p>While Duet records, both phones add the same pair of rising chirps to their files at agreed moments: at the start, every few minutes, after any interruption, and just before the end. This page decodes each file at 16 kHz, finds every chirp pair with a matched filter, pairs them up between the two recordings, and maps each recording onto one shared timeline through those points. That corrects the small speed difference between the phones' clocks, and if a phone stopped recording for a while (for example the screen locked), the missing stretch is filled with silence instead of shifting everything after it.</p>
+      <p>As a double-check it compares each person's own microphone with how the other phone heard them over the call; that copy should trail by the call's delay, usually 50–300 ms.</p>
+      <p>The exported files start at whichever recording began first; the other track starts with a little silence, so no audio is cut. If a phone dropped out and rejoined, add its <code>_part2</code> file too. Mic-only backup files have no chirps and are skipped.</p>
+      <p>Long calls: a 1-hour call needs roughly 1–2 GB of memory while decoding. Desktop Chrome or Safari is best.</p>
+    </details>
+  </section>
+</main>
+
+<script>
+'use strict';
+/* =====================================================================
+   Duet · align recordings
+   Input: the stereo files made by duet.html. Each file has
+     left  = that phone's own microphone,
+     right = the other person as heard over the call,
+   and both channels carry digitally injected markers (two rising chirps,
+   800 -> 3200 Hz over 250 ms, the second 450 ms after the first) at
+   instants both phones agreed on (start, periodic sync, re-sync after an
+   interruption, end). We find every marker in every file, pair them across
+   the two people's files, build a piecewise-linear map from each file's
+   time to one shared output timeline, and write aligned WAVs.
+   ===================================================================== */
+
+const VERSION = '2.1.0';
+const SR = 16000; // analysis + export sample rate
+const MARK = { f0: 800, f1: 3200, chirp: 0.25, gap: 0.45, fade: 0.01 };
+MARK.len = MARK.gap + MARK.chirp; // 0.70 s from the start of chirp 1 to the end of chirp 2
+
+const CFG = {
+  confStrong: 20,          // marker peak / median of the matched-filter envelope around it (noise alone: ~3-7)
+  confWeak: 10,
+  rivalRatio: 0.5,         // all markers in a file have the same level; keep peaks >= this fraction of the strongest
+  nmsSec: 1.0,             // two markers are never closer than this
+  scanN: 1 << 16,          // FFT block for the matched filter (overlap-save)
+  decim: 4,                // the envelope is computed at 16 kHz / 4, then refined at full rate
+  xcSkipSec: 1.5,          // cross-check starts this long after a marker
+  xcWinSec: 12,            // length of voice used for each cross-check
+  xcMaxPerDirection: 8,
+  xcNegSec: 0.5,           // lag search range: heard copy may lead by up to 0.5 s ...
+  xcPosSec: 1.0,           // ... or trail by up to 1.0 s
+  xcConfOk: 8,
+  gapTolSec: 0.05,         // between two markers, a length difference above max(50 ms, 600 ppm) is a recording gap,
+  gapTolPpm: 600,          // below it it's clock drift (spread evenly)
+  resyncLeadSec: 2.5,      // without a clock log, assume a gap ended this long before the next marker
+  chunkMinSec: 600,        // fragmented MP4 longer than this is decoded in pieces (bounded memory)...
+  pieceSec: 300,           // ...of about this length
+  wavBlockSec: 10,
+  wavFoldBytes: 16 << 20,  // fold written chunks into a Blob every 16 MB
+  muteBeforeSec: 0.02, muteAfterSec: 0.72,
+};
+
+/* ---------------- small helpers ---------------- */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const r1 = (x) => Math.round(x * 10) / 10, r3 = (x) => Math.round(x * 1000) / 1000, r4 = (x) => Math.round(x * 10000) / 10000;
+function fmtBytes(b) { return b < 1e6 ? `${Math.max(1, Math.round(b / 1e3))} KB` : b < 1e9 ? `${(b / 1e6).toFixed(1)} MB` : `${(b / 1e9).toFixed(2)} GB`; }
+function fmtDur(sec) {
+  const s = Math.max(0, Math.round(sec)), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60, p = (n) => String(n).padStart(2, '0');
+  return h ? `${h}:${p(m)}:${p(r)}` : `${m}:${p(r)}`;
+}
+// "2.537 s" for short times, "12:03.412" / "1:02:03.412" past a minute
+function fmtT(sec) {
+  if (Math.abs(sec) < 60) return `${sec.toFixed(3)} s`;
+  const sign = sec < 0 ? '-' : '', a = Math.abs(sec), h = Math.floor(a / 3600), m = Math.floor((a % 3600) / 60), s = a - h * 3600 - m * 60;
+  return `${sign}${h ? h + ':' + String(m).padStart(2, '0') : m}:${s.toFixed(3).padStart(6, '0')}`;
+}
+const median1 = (a) => { const s = a.slice().sort((x, y) => x - y); return s.length ? s[s.length >> 1] : 0; };
+function slugName(s) { return (s || '').normalize('NFKD').replace(/[^\w-]+/g, '').slice(0, 24) || 'me'; } // same as duet.html
+function safeFileName(s) { return String(s || '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '').replace(/\s+/g, ' ').trim().slice(0, 40) || 'person'; }
+class Cancelled extends Error { constructor() { super('cancelled'); this.name = 'Cancelled'; } }
+
+// Yield to the event loop without timer throttling (setTimeout is clamped to 1/s in background tabs).
+const yieldToUI = (() => {
+  if (typeof MessageChannel === 'undefined') return () => new Promise((r) => setTimeout(r, 0));
+  const ch = new MessageChannel(), q = [];
+  ch.port1.onmessage = () => { const r = q.shift(); if (r) r(); };
+  return () => new Promise((r) => { q.push(r); ch.port2.postMessage(0); });
+})();
+let lastYield = 0, lastPaint = 0;
+async function maybeYield(gen) {
+  if (gen != null && gen !== S.gen) throw new Cancelled();
+  const t = performance.now();
+  if (t - lastYield < 40) return;
+  if (t - lastPaint > 250 && document.visibilityState === 'visible') {
+    await new Promise((r) => setTimeout(r, 0)); lastPaint = performance.now(); // give the browser a chance to paint progress
+  } else await yieldToUI();
+  lastYield = performance.now();
+  if (gen != null && gen !== S.gen) throw new Cancelled();
+}
+
+/* =====================================================================
+   FFT (in-place iterative radix-2, Float64)
+   ===================================================================== */
+const fftTabs = new Map();
+function fftTables(n) {
+  let t = fftTabs.get(n);
+  if (t) return t;
+  const bits = Math.round(Math.log2(n)), rev = new Uint32Array(n);
+  for (let i = 1; i < n; i++) rev[i] = (rev[i >> 1] >> 1) | ((i & 1) << (bits - 1));
+  const h = n >> 1, cos = new Float64Array(h), sin = new Float64Array(h);
+  for (let i = 0; i < h; i++) { cos[i] = Math.cos((2 * Math.PI * i) / n); sin[i] = Math.sin((2 * Math.PI * i) / n); }
+  t = { rev, cos, sin };
+  if (fftTabs.size > 8) fftTabs.clear();
+  fftTabs.set(n, t);
+  return t;
+}
+// Forward: X[k] = sum x[n] e^{-2 pi i k n / N}. Inverse is unscaled (divide by N yourself).
+function fft(re, im, inverse) {
+  const n = re.length, { rev, cos, sin } = fftTables(n);
+  for (let i = 0; i < n; i++) {
+    const j = rev[i];
+    if (j > i) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; }
+  }
+  const sg = inverse ? 1 : -1;
+  for (let size = 2; size <= n; size <<= 1) {
+    const half = size >> 1, step = n / size;
+    for (let j = 0; j < half; j++) {
+      const wr = cos[j * step], wi = sg * sin[j * step];
+      for (let a = j; a < n; a += size) {
+        const b = a + half, xr = re[b], xi = im[b];
+        const tr = xr * wr - xi * wi, ti = xr * wi + xi * wr;
+        re[b] = re[a] - tr; im[b] = im[a] - ti; re[a] += tr; im[a] += ti;
+      }
+    }
+  }
+}
+const nextPow2 = (n) => { let p = 1; while (p < n) p <<= 1; return p; };
+
+/* =====================================================================
+   Marker template + matched filter
+   ===================================================================== */
+// The template is ONE chirp in analytic (complex) form, exp(i*phase) * envelope, generated the way
+// duet.html's oscillators make it (exponential ramp 800->3200 Hz over 250 ms, 10 ms linear fades).
+// Correlating the real signal with it gives the matched-filter ENVELOPE |c(n)|: a smooth peak that
+// doesn't depend on the carrier phase, so codec phase shifts can't make us pick a neighbouring cycle.
+// The two chirps are then combined NON-coherently: env(n) = |c(n)| + |c(n + 450 ms)|.
+// (Measured: Web Audio does not keep a fixed carrier phase between the two oscillators; in Chrome the
+// second chirp came out 75-95 degrees off depending on start time and sample rate. A coherent two-chirp
+// template would lose ~30% there, and at 180 degrees the true peak would cancel and a sidelobe 450 ms
+// away would win. Adding magnitudes is immune to that.)
+// env has its main peak at the first chirp's start and half-height sidelobes at +-450 ms.
+// Detection is amplitude-agnostic: we only use peak / local median and ratios between peaks.
+let TMPL = null;
+function template() {
+  if (TMPL) return TMPL;
+  const n = Math.round(MARK.chirp * SR), re = new Float64Array(n), im = new Float64Array(n);
+  const k = Math.log(MARK.f1 / MARK.f0) / MARK.chirp;
+  let e = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / SR, ph = (2 * Math.PI * MARK.f0 * (Math.exp(k * t) - 1)) / k;
+    const g = Math.max(0, Math.min(1, t / MARK.fade, (MARK.chirp - t) / MARK.fade));
+    re[i] = g * Math.cos(ph); im[i] = g * Math.sin(ph); e += g * g;
+  }
+  const s = 1 / Math.sqrt(e);
+  for (let i = 0; i < n; i++) { re[i] *= s; im[i] *= s; }
+  const gap = Math.round(MARK.gap * SR);
+  // A chirp of amplitude A gives |c| ~= A*sqrt(E)/2, so a whole marker gives env ~= A*sqrt(E) per channel.
+  TMPL = { re, im, n, gap, span: gap + n, unitPeak: Math.sqrt(e) };
+  return TMPL;
+}
+// Spectrum of the template for block size N: conj(H[k]) for the chirp band only (600-3400 Hz, positive
+// frequencies), plus the twiddles needed to unpack a real FFT done as a half-size complex FFT.
+const specCache = new Map();
+function templateSpectrum(N) {
+  let H = specCache.get(N);
+  if (H) return H;
+  const T = template(), re = new Float64Array(N), im = new Float64Array(N);
+  re.set(T.re); im.set(T.im);
+  fft(re, im, false);
+  const lo = Math.floor((600 / SR) * N), hi = Math.ceil((3400 / SR) * N), n = hi - lo + 1;
+  const hr = new Float64Array(n), hi_ = new Float64Array(n), wr = new Float64Array(n), wi = new Float64Array(n);
+  for (let q = 0; q < n; q++) {
+    const k = lo + q;
+    hr[q] = re[k]; hi_[q] = -im[k];
+    wr[q] = Math.cos((2 * Math.PI * k) / N); wi[q] = -Math.sin((2 * Math.PI * k) / N);
+  }
+  H = { lo, hiK: hi, hr, hi: hi_, wr, wi };
+  specCache.set(N, H);
+  return H;
+}
+
+/*
+  Which channel to search: we use the SUM of left + right.
+  The marker is mixed digitally into BOTH channels with identical samples, so in L+R it adds
+  coherently (+6 dB amplitude) while the two unrelated voices add only in power (+3 dB at most):
+  net ~+3 dB SNR when both people talk over the marker, and ~+6 dB in the common case where only
+  one of them is talking (the quiet channel contributes marker but little interference).
+  L+R is also exactly the "mid" signal that AAC joint-stereo coding spends most bits on, so the
+  marker survives the codec best there. We still measure every marker on L and R separately and
+  report whether they agree, as a sanity check.
+
+  Speed: overlap-save FFT correlation in blocks of N = 65536 (never one giant FFT, so a 2-hour file
+  streams through in bounded memory). The real input is transformed as an N/2-point complex FFT, and
+  because the product spectrum only occupies the 600-3400 Hz band, the inverse FFT is done at N/4
+  points on the frequency-shifted band. A frequency shift doesn't change magnitudes, so this gives the
+  EXACT envelope at every 4th lag; peaks are then refined at full rate with direct sums.
+  Calls onBlock(s, envD, cnt) where envD[m] is the envelope at sample s + 4*m.
+*/
+async function matchedFilter(src, s0, s1, gen, onBlock) {
+  const T = template(), N = CFG.scanN, D = CFG.decim, Hn = N >> 1, M = N / D, H = templateSpectrum(N);
+  const valid = N - T.n + 1, gapD = T.gap / D, stepD = Math.floor((valid - 1 - T.gap) / D) + 1, step = stepD * D;
+  const zr = new Float64Array(Hn), zi = new Float64Array(Hn), yr = new Float64Array(M), yi = new Float64Array(M);
+  const mag = new Float32Array(M), env = new Float32Array(stepD);
+  const { L, R, len } = src, lo = H.lo, nb = H.hr.length, inv = 1 / N;
+  for (let s = s0; s < s1; s += step) {
+    const avail = Math.max(0, Math.min(N, len - s)), pairs = avail >> 1;
+    if (R) for (let n = 0, i = s; n < pairs; n++, i += 2) { zr[n] = L[i] + R[i]; zi[n] = L[i + 1] + R[i + 1]; }
+    else for (let n = 0, i = s; n < pairs; n++, i += 2) { zr[n] = L[i]; zi[n] = L[i + 1]; }
+    zr.fill(0, pairs); zi.fill(0, pairs);
+    if (avail & 1) zr[pairs] = L[s + avail - 1] + (R ? R[s + avail - 1] : 0);
+    fft(zr, zi, false);
+    yr.fill(0); yi.fill(0);
+    for (let q = 0; q < nb; q++) {
+      const k = lo + q, k2 = Hn - k;          // 0 < k < Hn here
+      const ar = zr[k], ai = zi[k], br = zr[k2], bi = -zi[k2];
+      const er = 0.5 * (ar + br), ei = 0.5 * (ai + bi);     // even-sample spectrum
+      const orr = 0.5 * (ai - bi), oi = -0.5 * (ar - br);    // odd-sample spectrum
+      const wr = H.wr[q], wi = H.wi[q];
+      const xr = er + wr * orr - wi * oi, xi = ei + wr * oi + wi * orr;  // X[k] of the real block
+      const cr = H.hr[q], ci = H.hi[q];
+      yr[q] = xr * cr - xi * ci; yi[q] = xr * ci + xi * cr;
+    }
+    fft(yr, yi, true);
+    for (let m = 0; m < M; m++) mag[m] = Math.sqrt(yr[m] * yr[m] + yi[m] * yi[m]) * inv;
+    const cnt = Math.min(stepD, Math.ceil((s1 - s) / D));
+    for (let m = 0; m < cnt; m++) env[m] = mag[m] + mag[m + gapD];
+    await onBlock(s, env, cnt);
+    await maybeYield(gen);
+  }
+}
+
+function median(arr, stride = 1) {
+  const n = Math.floor((arr.length - 1) / stride) + 1;
+  if (n <= 0) return 0;
+  const tmp = new Float32Array(n);
+  for (let i = 0, j = 0; j < n; i += stride, j++) tmp[j] = arr[i];
+  tmp.sort();
+  return tmp[n >> 1];
+}
+function parabolic(ym, y0, yp) {
+  const den = ym - 2 * y0 + yp;
+  if (!(den < 0)) return 0;
+  const d = (0.5 * (ym - yp)) / den;
+  return Math.max(-0.5, Math.min(0.5, d));
+}
+// Exact matched-filter envelope at one position (full rate), on one channel or on L+R.
+function chirpAt(L, R, n) {
+  const T = template();
+  let a = 0, b = 0;
+  const lim = Math.min(T.n, L.length - n);
+  if (n < 0) return 0;
+  if (R) for (let k = 0; k < lim; k++) { const v = L[n + k] + R[n + k]; a += v * T.re[k]; b -= v * T.im[k]; }
+  else for (let k = 0; k < lim; k++) { const v = L[n + k]; a += v * T.re[k]; b -= v * T.im[k]; }
+  return Math.sqrt(a * a + b * b);
+}
+function envAt(L, R, n) { return chirpAt(L, R, n) + chirpAt(L, R, n + template().gap); }
+function refineAt(L, R, n0, half) {
+  const v = {};
+  let best = -1, bi = n0;
+  for (let n = n0 - half; n <= n0 + half; n++) {
+    if (n < 0) continue;
+    v[n] = envAt(L, R, n);
+    if (v[n] > best) { best = v[n]; bi = n; }
+  }
+  const d = v[bi - 1] != null && v[bi + 1] != null ? parabolic(v[bi - 1], v[bi], v[bi + 1]) : 0;
+  return { pos: bi + d, peak: best };
+}
+
+// Find every marker in the file. Returns [{time, peak, conf, amp, lrMs}] sorted by time.
+async function findMarkers(src, gen, onProgress) {
+  const T = template(), D = CFG.decim, seg = Math.round((0.5 * SR) / D), cands = [];
+  await matchedFilter(src, 0, src.len, gen, (s, env, cnt) => {
+    const med = Math.max(median(env.subarray(0, cnt), 3), 1e-12);
+    for (let a = 0; a < cnt; a += seg) {
+      const b = Math.min(cnt, a + seg);
+      let bi = -1, bv = 0;
+      for (let i = a; i < b; i++) if (env[i] > bv) { bv = env[i]; bi = i; }
+      if (bi >= 0 && bv / med >= CFG.confWeak) cands.push({ n: s + bi * D, v: bv, conf: bv / med });
+    }
+    if (onProgress) onProgress(Math.min(1, (s + cnt * D) / src.len));
+  });
+  cands.sort((a, b) => b.v - a.v);
+  const kept = [], minD = CFG.nmsSec * SR;
+  for (const c of cands) if (!kept.some((k) => Math.abs(k.n - c.n) < minD)) kept.push(c);
+  if (!kept.length) return [];
+  // Every marker in a file is injected at the same level; anything much weaker is not a marker.
+  const top = kept[0].v, nch = src.R ? 2 : 1;
+  const out = [];
+  for (const c of kept.filter((c) => c.v >= CFG.rivalRatio * top).sort((a, b) => a.n - b.n)) {
+    const f = refineAt(src.L, src.R, c.n, D + 1);
+    const m = { time: f.pos / SR, peak: f.peak, conf: (c.conf * f.peak) / c.v, amp: f.peak / (nch * T.unitPeak) };
+    if (src.R) {
+      const a = refineAt(src.L, null, Math.round(f.pos), 3), b = refineAt(src.R, null, Math.round(f.pos), 3);
+      m.lrMs = (Math.abs(a.pos - b.pos) / SR) * 1000;
+    }
+    out.push(m);
+    await maybeYield(gen);
+  }
+  return out;
+}
+
+/* =====================================================================
+   Decoding (always to 16 kHz)
+   ===================================================================== */
+function decodeWith(ctx, ab) {
+  return new Promise((res, rej) => {
+    let p;
+    try { p = ctx.decodeAudioData(ab, res, (e) => rej(e || new Error('decode failed'))); } catch (e) { rej(e); return; }
+    if (p && typeof p.then === 'function') p.then(res, rej);
+  });
+}
+async function decode16k(ab) {
+  const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  if (!OAC) throw new Error('This browser has no Web Audio support.');
+  let ctx;
+  // decodeAudioData resamples to the context's rate (verified in Chrome; Safari does the same), so a
+  // 16 kHz context gives 16 kHz data directly: 3x less memory than 48 kHz for long calls.
+  try { ctx = new OAC(2, SR, SR); } catch (e) { ctx = new OAC(2, 44100, 44100); } // very old Safari: no 16 kHz contexts
+  const buf = await decodeWith(ctx, ab);
+  if (buf.sampleRate === SR) return { length: buf.length, channels: buf.numberOfChannels, ch: (c) => buf.getChannelData(c) };
+  // Fallback: resample ourselves (windowed sinc) if the browser didn't.
+  const chans = [];
+  for (let c = 0; c < Math.min(2, buf.numberOfChannels); c++) chans.push(resample(buf.getChannelData(c), buf.sampleRate, SR));
+  return { length: chans[0].length, channels: buf.numberOfChannels, ch: (c) => chans[c], resampledFrom: buf.sampleRate };
+}
+function resample(x, from, to) {
+  const ratio = from / to, n = Math.floor(x.length / ratio), out = new Float32Array(n);
+  const cut = Math.min(1, 1 / ratio) * 0.95, half = 16;
+  for (let j = 0; j < n; j++) {
+    const c = j * ratio, i0 = Math.floor(c);
+    let s = 0, w = 0;
+    for (let i = i0 - half + 1; i <= i0 + half; i++) {
+      if (i < 0 || i >= x.length) continue;
+      const t = i - c, sinc = t === 0 ? 1 : Math.sin(Math.PI * cut * t) / (Math.PI * cut * t);
+      const k = sinc * (0.5 + 0.5 * Math.cos((Math.PI * t) / (half + 1)));
+      s += x[i] * k; w += k;
+    }
+    out[j] = w ? s / w : 0;
+  }
+  return out;
+}
+
+/* =====================================================================
+   Piecewise decoding of fragmented MP4 (what MediaRecorder writes in both Chrome and Safari)
+   Chrome's decodeAudioData decodes a whole file at its own rate (48 kHz) before resampling, so a
+   1-hour stereo file peaks at ~4 GB of memory. For long files we split at fragment ("moof")
+   boundaries, decode ~5-minute pieces (init segment + fragments) and stitch them: each piece is
+   placed by its first fragment's decode time (tfdt), starts one fragment early so the decoder has
+   warmed up by the time we use its output, and the placement is double-checked by correlating the
+   overlapping fragment with what the previous piece produced.
+   ===================================================================== */
+const fourcc = (dv, p) => String.fromCharCode(dv.getUint8(p), dv.getUint8(p + 1), dv.getUint8(p + 2), dv.getUint8(p + 3));
+function* boxesIn(dv, start, end) {
+  let p = start;
+  while (p + 8 <= end) {
+    let size = dv.getUint32(p), hdr = 8;
+    const type = fourcc(dv, p + 4);
+    if (size === 1) { if (p + 16 > end) return; size = dv.getUint32(p + 8) * 4294967296 + dv.getUint32(p + 12); hdr = 16; }
+    else if (size === 0) size = end - p;
+    if (size < hdr || p + size > end) { yield { type, start: p, end, body: p + hdr, truncated: true }; return; }
+    yield { type, start: p, end: p + size, body: p + hdr };
+    p += size;
+  }
+}
+function childBox(dv, box, type) { for (const b of boxesIn(dv, box.body, box.end)) if (b.type === type && !b.truncated) return b; return null; }
+function parseFmp4(ab) {
+  const dv = new DataView(ab);
+  let initEnd = -1, timescale = null, cur = null;
+  const frags = [];
+  for (const b of boxesIn(dv, 0, ab.byteLength)) {
+    if (b.truncated) break; // e.g. a file recovered after a crash: use the complete fragments
+    if (b.type === 'moov') {
+      for (const t of boxesIn(dv, b.body, b.end)) {
+        if (t.type !== 'trak' || t.truncated) continue;
+        const mdia = childBox(dv, t, 'mdia'), hdlr = mdia && childBox(dv, mdia, 'hdlr'), mdhd = mdia && childBox(dv, mdia, 'mdhd');
+        if (!hdlr || !mdhd || fourcc(dv, hdlr.body + 8) !== 'soun') continue;
+        timescale = dv.getUint32(mdhd.body + (dv.getUint8(mdhd.body) === 1 ? 20 : 12));
+        break;
+      }
+    } else if (b.type === 'moof') {
+      if (initEnd < 0) initEnd = b.start;
+      const traf = childBox(dv, b, 'traf'), tfdt = traf && childBox(dv, traf, 'tfdt');
+      if (!tfdt) return null;
+      const t = dv.getUint8(tfdt.body) === 1 ? dv.getUint32(tfdt.body + 4) * 4294967296 + dv.getUint32(tfdt.body + 8) : dv.getUint32(tfdt.body + 4);
+      cur = { start: b.start, tfdt: t };
+    } else if (b.type === 'mdat' && cur) { cur.end = b.end; frags.push(cur); cur = null; }
+  }
+  if (initEnd < 0 || !frags.length || !timescale) return null;
+  return { initEnd, frags, timescale, spanSec: (frags[frags.length - 1].tfdt - frags[0].tfdt) / timescale };
+}
+async function decodeChunked(ab, info, gen, onProgress) {
+  const { initEnd, frags, timescale } = info, t0 = frags[0].tfdt, init = new Uint8Array(ab, 0, initEnd);
+  const gOf = (k) => Math.round(((frags[k].tfdt - t0) / timescale) * SR);
+  const cap = Math.ceil((info.spanSec + 60) * SR);
+  const L = new Float32Array(cap);
+  let R = null, channels = 1, written = 0, pieces = 0, i = 0;
+  const shifts = [];
+  while (i < frags.length) {
+    let j = i;
+    while (j + 1 < frags.length && (frags[j + 1].tfdt - frags[i].tfdt) / timescale < CFG.pieceSec) j++;
+    // Start one fragment early (decoder warm-up); prefer a fragment whose start lies exactly on the
+    // 16 kHz grid, so the piece is resampled on the same grid as a whole-file decode would be.
+    let from = Math.max(0, i - 1);
+    for (let c = i - 1; c >= Math.max(0, i - 4); c--) if ((((frags[c].tfdt - t0) * SR) % timescale) === 0) { from = c; break; }
+    const pab = await new Blob([init, new Uint8Array(ab, frags[from].start, frags[j].end - frags[from].start)]).arrayBuffer();
+    if (gen != null && gen !== S.gen) throw new Cancelled();
+    const dec = await decode16k(pab);
+    if (!R && dec.channels > 1) { R = new Float32Array(cap); channels = dec.channels; }
+    const pL = dec.ch(0), pR = dec.channels > 1 ? dec.ch(1) : null;
+    let off = gOf(from), keepFrom = 0;
+    if (from < i) {
+      keepFrom = gOf(i);
+      // check the placement on the overlapping fragment (skip its first 0.25 s: decoder warm-up)
+      const r0 = off + Math.round(0.25 * SR), len = keepFrom - Math.round(0.05 * SR) - r0, W = 2048;
+      if (len > 0.3 * SR && r0 - off - W >= 0 && r0 - off + len + W <= pL.length) {
+        const heard = new Float32Array(len + 2 * W), own = new Float32Array(len);
+        for (let k = 0; k < heard.length; k++) { const q = r0 - off - W + k; heard[k] = pL[q] + (pR ? pR[q] : 0); }
+        for (let k = 0; k < len; k++) own[k] = L[r0 + k] + (R ? R[r0 + k] : 0);
+        if (rms(own) > 1e-4) {
+          const r = gcc(heard, own, W, W);
+          // only correct real discrepancies (e.g. a priming trim), not sub-sample resampler phase
+          const lag = Math.round((r.lagMs * SR) / 1000);
+          if (r.conf >= CFG.xcConfOk && Math.abs(lag) >= 2) off -= lag;
+          shifts.push(lag);
+        }
+      }
+    }
+    for (let k = Math.max(0, keepFrom - off); k < pL.length; k++) {
+      const g = off + k;
+      if (g >= cap) break;
+      L[g] = pL[k];
+      if (R && pR) R[g] = pR[k];
+    }
+    written = Math.max(written, Math.min(cap, off + pL.length));
+    pieces++;
+    if (onProgress) onProgress((j + 1) / frags.length);
+    i = j + 1;
+  }
+  return { length: written, channels, ch: (c) => (c ? R : L).subarray(0, written), pieces, shifts };
+}
+
+/* =====================================================================
+   File names + timing (sidecar) files
+   duet_<session>_<name>[_partN][_mic-only].<ext>   (session has no "_")
+   ===================================================================== */
+function parseName(name) {
+  const m = /^duet_([^_]+)_(.+?)(?:_part(\d+))?(_mic-only\d*)?(?:[ _-]?\(\d+\))?\.([a-z0-9]+)$/i.exec(name);
+  if (m) return { parsed: true, session: m[1], person: m[2], part: m[3] ? +m[3] : 1, micOnly: !!m[4], ext: m[5].toLowerCase() };
+  const base = name.replace(/\.[^.]+$/, ''), pm = /_part(\d+)/i.exec(base);
+  return { parsed: false, session: null, person: base.replace(/_part\d+.*$/i, '').replace(/_mic-only.*$/i, '').replace(/[ _-]?\(\d+\)$/, '') || base, part: pm ? +pm[1] : 1, micOnly: /mic-only/i.test(base), ext: (/\.([^.]+)$/.exec(name) || [])[1] || '' };
+}
+function attachSidecars() {
+  for (const e of S.entries) {
+    if (e.sidecar) continue;
+    const base = e.name.replace(/\.[^.]+$/, '').replace(/[ _-]?\(\d+\)$/, '');
+    const hit = S.sidecars.find((s) => (Array.isArray(s.data.files) && s.data.files.includes(e.name)) || s.name.replace(/_timing(?:[ _-]?\(\d+\))?\.json$/i, '') === base)
+      || S.sidecars.find((s) => e.info.parsed && s.data.session === e.info.session && slugName(s.data.me) === e.info.person && (+s.data.part || 1) === e.info.part && s.data.kind !== 'mic');
+    if (hit) { e.sidecar = hit.data; e.sidecarName = hit.name; }
+  }
+}
+function personInfo(e) {
+  const sc = e.sidecar;
+  const raw = sc && sc.me ? String(sc.me) : e.info.person;
+  return {
+    name: raw, key: slugName(raw).toLowerCase(),
+    part: sc && +sc.part ? +sc.part : e.info.part,
+    role: (sc && sc.role) || null,
+    session: (sc && sc.session) || e.info.session,
+  };
+}
+// Link each detected marker to the timing file's marker list (by approxSecInFile, after removing the
+// recorder's constant start latency), giving it the shared idx / wallMs / kind.
+function associateSidecar(e) {
+  e.scMarks = e.markers.map(() => null);
+  const list = e.sidecar && Array.isArray(e.sidecar.markers) ? e.sidecar.markers : [];
+  const ok = list.map((m, k) => ({ m, k })).filter((x) => x.m && isFinite(x.m.approxSecInFile));
+  if (!ok.length || !e.markers.length) return;
+  const diffs = [];
+  for (const { m } of ok) {
+    let best = null;
+    for (const d of e.markers) { const df = d.time - m.approxSecInFile; if (Math.abs(df) < 3 && (best == null || Math.abs(df) < Math.abs(best))) best = df; }
+    if (best != null) diffs.push(best);
+  }
+  const shift = diffs.length ? median1(diffs) : 0, used = new Set();
+  for (const { m, k } of ok) {
+    let bi = -1, bd = 1.2;
+    e.markers.forEach((d, i) => { const df = Math.abs(d.time - (m.approxSecInFile + shift)); if (!used.has(i) && df < bd) { bd = df; bi = i; } });
+    if (bi >= 0) { used.add(bi); e.scMarks[bi] = { idx: m.idx != null ? m.idx : null, wallMs: isFinite(m.wallMs) ? +m.wallMs : null, kind: m.kind || null, listPos: k }; }
+  }
+}
+
+/* =====================================================================
+   State
+   ===================================================================== */
+const S = {
+  entries: [], sidecars: [], gen: 0, queue: Promise.resolve(),
+  align: null, swap: false, names: {}, outputs: null, exporting: false,
+};
+let nextId = 1;
+function makeEntry(file) {
+  return {
+    id: nextId++, file, name: file.name, size: file.size, info: parseName(file.name),
+    sidecar: null, sidecarName: null, state: 'queued', msg: '', err: null,
+    duration: null, channels: null, len: 0, left: null, rightWins: [], markers: [], marker: null, extras: [], scMarks: [],
+  };
+}
+
+/* =====================================================================
+   Per-file analysis
+   ===================================================================== */
+function label(e) { const p = personInfo(e); return `${p.name}'s ${p.part > 1 ? 'part ' + p.part + ' ' : ''}recording`; }
+const usable = (e) => e.state === 'done' && e.markers.length > 0;
+
+async function analyzeEntry(e, gen) {
+  if (e.info.micOnly) { e.state = 'skipped'; e.msg = 'Mic-only backup file: it has no sync chirps, so it isn\'t used.'; return; }
+  e.state = 'reading'; e.msg = 'Reading…'; render();
+  setStatus(`Reading ${label(e)} (${fmtBytes(e.size)})…`, 'busy', -1);
+  let ab = await e.file.arrayBuffer();
+  if (gen !== S.gen) throw new Cancelled();
+  e.state = 'decoding'; e.msg = 'Decoding…'; render();
+  setStatus(`Decoding ${label(e)}… long calls can take a minute.`, 'busy', -1);
+  let dec = null;
+  const frag = parseFmp4(ab);
+  if (frag && frag.spanSec > CFG.chunkMinSec) {
+    try {
+      dec = await decodeChunked(ab, frag, gen, (f) => setStatus(`Decoding ${label(e)} in pieces… ${Math.round(f * 100)}%`, 'busy', f));
+      e.decodedInPieces = { pieces: dec.pieces, placementCorrections: dec.shifts.filter((x) => Math.abs(x) >= 2).length };
+    } catch (err) {
+      if (err instanceof Cancelled) throw err;
+      console.warn('piecewise decode failed; decoding the whole file instead', err);
+      dec = null;
+    }
+  }
+  try { if (!dec) dec = await decode16k(ab); }
+  catch (err) {
+    e.state = 'error';
+    e.err = `This file couldn't be decoded (${(err && (err.message || err.name)) || 'unknown error'}). ` +
+      (e.size > 60e6 ? 'It may be too long for this browser\'s memory: try desktop Chrome or Safari with other tabs closed.' : 'Is it an audio file from Duet?');
+    return;
+  }
+  ab = null;
+  if (gen !== S.gen) throw new Cancelled();
+  e.duration = dec.length / SR; e.channels = dec.channels; e.len = dec.length; e.resampledFrom = dec.resampledFrom || null;
+  const src = { L: dec.ch(0), R: dec.channels > 1 ? dec.ch(1) : null, len: dec.length };
+  e.state = 'searching'; e.msg = 'Finding the sync chirps…'; render();
+  e.markers = await findMarkers(src, gen, (f) => setStatus(`Finding the sync chirps in ${label(e)}… ${Math.round(f * 100)}%`, 'busy', f));
+  e.marker = e.markers[0] || null; e.extras = e.markers.slice(1);
+  if (!e.markers.length && dec.channels < 2) { e.state = 'skipped'; e.msg = 'Mono file without sync chirps (probably a mic-only backup), so it isn\'t used.'; return; }
+  e.rightWins = src.R ? extractWindows(src.R, src.len, markerTimes(e), e.markers.length < 3) : [];
+  e.state = 'converting'; e.msg = 'Preparing…'; render();
+  e.left = await toInt16(src.L, gen);
+  e.state = 'done'; e.msg = '';
+}
+function markerTimes(e) { return e.markers.map((m) => m.time); }
+async function toInt16(x, gen) {
+  const out = new Int16Array(x.length), B = 1 << 20;
+  for (let s = 0; s < x.length; s += B) {
+    const end = Math.min(x.length, s + B);
+    for (let i = s; i < end; i++) {
+      let v = x[i] * 32768;
+      v = v >= 32767 ? 32767 : v <= -32768 ? -32768 : v;
+      out[i] = v < 0 ? v - 0.5 : v + 0.5; // typed-array store truncates toward zero, so this rounds
+    }
+    await maybeYield(gen);
+  }
+  return out;
+}
+function zeroSpan(arr, a, b) {
+  a = Math.max(0, Math.floor(a)); b = Math.min(arr.length, Math.ceil(b));
+  if (b > a) arr.fill(0, a, b);
+}
+// Keep short pieces of the RIGHT channel (the other person as heard over the call) for the
+// cross-check, so we don't have to hold the whole right channel in memory for a 2-hour call.
+function extractWindows(R, len, marks, addLater) {
+  const neg = Math.round(CFG.xcNegSec * SR), pos = Math.round(CFG.xcPosSec * SR), Wmax = Math.round(CFG.xcWinSec * SR);
+  const skip = Math.round(CFG.xcSkipSec * SR), minW = 5 * SR, wins = [];
+  const add = (ownStart, kind, ref) => {
+    ownStart = Math.round(ownStart);
+    let W = Math.min(Wmax, len - pos - ownStart);
+    // stop before the next marker (it may sit right after a recording gap)
+    const next = marks.find((m) => m * SR > ownStart);
+    if (next != null) W = Math.min(W, Math.round(next * SR) - ownStart - Math.round(0.1 * SR));
+    if (ownStart - neg < 0 || W < minW) return;
+    if (kind !== 'after-marker' && wins.some((w) => Math.abs(w.ownStart - ownStart) < Wmax * 1.5)) return;
+    const data = R.slice(ownStart - neg, ownStart + W + pos);
+    for (const m of marks) { const at = Math.round(m * SR) - (ownStart - neg); zeroSpan(data, at - 0.05 * SR, at + 0.8 * SR); }
+    wins.push({ ownStart, W, neg, pos, data, kind, ref });
+  };
+  for (const m of marks) add(m * SR + skip, 'after-marker', m);
+  if (addLater && len > 90 * SR) {
+    for (const f of [0.25, 0.5, 0.75]) add(len * f, 'later', null);
+    add(len - Wmax - pos - SR, 'later', null);
+  }
+  return wins;
+}
+
+/* =====================================================================
+   Cross-check: generalized cross-correlation (partially whitened, "PHAT-beta")
+   heard: the right-channel piece, covering [g0 - neg, g0 + W + pos]
+   own:   the other person's own mic, covering [g0, g0 + W]
+   Returns the lag (ms) by which the heard copy trails the original.
+   ===================================================================== */
+function gcc(heard, own, neg, pos) {
+  const N = nextPow2(heard.length + own.length);
+  const xr = new Float64Array(N), xi = new Float64Array(N), yr = new Float64Array(N), yi = new Float64Array(N);
+  xr.set(heard); yr.set(own);
+  fft(xr, xi, false); fft(yr, yi, false);
+  const lo = Math.floor((100 / SR) * N), hi = Math.ceil((7000 / SR) * N), beta = 0.75;
+  let meanW = 0, cnt = 0;
+  for (let k = lo; k <= hi; k++) {
+    const cr = xr[k] * yr[k] + xi[k] * yi[k], ci = xi[k] * yr[k] - xr[k] * yi[k];
+    meanW += Math.pow(Math.sqrt(cr * cr + ci * ci), beta); cnt++;
+  }
+  const eps = (meanW / Math.max(1, cnt)) * 1e-3 + 1e-30;
+  for (let k = 0; k < N; k++) {
+    const kk = k <= N / 2 ? k : N - k;
+    if (kk < lo || kk > hi) { xr[k] = 0; xi[k] = 0; continue; }
+    const cr = xr[k] * yr[k] + xi[k] * yi[k], ci = xi[k] * yr[k] - xr[k] * yi[k];
+    const w = 1 / (Math.pow(Math.sqrt(cr * cr + ci * ci), beta) + eps);
+    xr[k] = cr * w; xi[k] = ci * w;
+  }
+  fft(xr, xi, true);
+  const K = neg + pos, abs = new Float32Array(K + 1);
+  let bk = 0, bv = -Infinity;
+  for (let k = 0; k <= K; k++) { abs[k] = Math.abs(xr[k]); if (xr[k] > bv) { bv = xr[k]; bk = k; } }
+  const d = bk > 0 && bk < K ? parabolic(xr[bk - 1], xr[bk], xr[bk + 1]) : 0;
+  const med = median(abs) || 1e-30;
+  return { lagMs: ((bk + d - neg) / SR) * 1000, conf: bv / med };
+}
+function rms(a) { let s = 0; for (let i = 0; i < a.length; i += 4) s += a[i] * a[i]; return Math.sqrt(s / Math.max(1, Math.ceil(a.length / 4))); }
+
+// Voices check for a hypothetical pairing "marker i of X is the same instant as marker j of Y":
+// X's right channel after marker i should contain Y's own mic after marker j, trailing by the call delay.
+function pairScore(X, i, Y, j) {
+  let best = 0;
+  for (const [Hf, hi, Of, oj] of [[X, i, Y, j], [Y, j, X, i]]) {
+    const hm = Hf.markers[hi], om = Of.markers[oj];
+    const w = Hf.rightWins.find((w) => w.kind === 'after-marker' && Math.abs(w.ref - hm.time) < 0.01);
+    if (!w || !Of.left) continue;
+    const start = Math.round((om.time - hm.time) * SR) + w.ownStart, own = new Float32Array(w.W), d = Of.left;
+    let cov = 0;
+    for (let k = 0; k < w.W; k++) { const s = start + k; if (s >= 0 && s < d.length) { own[k] = d[s] / 32768; cov++; } }
+    for (const t of markerTimes(Of)) { const at = Math.round(t * SR) - start; zeroSpan(own, at - 0.05 * SR, at + 0.8 * SR); }
+    if (cov < 0.6 * w.W || rms(own) < 1e-4 || rms(w.data) < 1e-4) continue;
+    const r = gcc(w.data, own, w.neg, w.pos);
+    if (r.lagMs > -50 && r.lagMs < 800) best = Math.max(best, r.conf);
+  }
+  return best;
+}
+
+/* =====================================================================
+   Alignment
+   Every detected marker is an instant both phones agreed on. Markers paired across the two people's
+   files become "events". The output timeline gives each event one time O, and each file gets a
+   piecewise-linear map (file time -> output time) through its events. Between two events a file either
+   ran continuously (the map's slope absorbs clock drift, typically tens of ppm) or it is shorter than
+   the elapsed time: then that phone stopped recording for a while (iOS drops those samples from the
+   file instead of storing silence), and we insert that much silence at the estimated stop point.
+   ===================================================================== */
+const gapTol = (dur) => Math.max(CFG.gapTolSec, CFG.gapTolPpm * 1e-6 * dur);
+
+function groupPeople() {
+  const map = new Map(), list = [];
+  for (const e of S.entries) {
+    if (e.state === 'skipped') continue;
+    const pi = personInfo(e);
+    e.part = pi.part;
+    let key = pi.key, dup = 1;
+    // Two different files claiming the same person AND part: most likely two people whose files were renamed.
+    while (map.has(key) && map.get(key).entries.some((x) => x.part === e.part)) { dup++; key = pi.key + '#' + dup; }
+    let P = map.get(key);
+    if (!P) { P = { key, name: pi.name + (dup > 1 ? ` (${dup})` : ''), role: pi.role, entries: [] }; map.set(key, P); list.push(P); }
+    if (!P.role && pi.role) P.role = pi.role;
+    P.entries.push(e);
+  }
+  for (const P of list) {
+    P.entries.sort((a, b) => a.part - b.part);
+    if (S.names[P.key]) P.name = S.names[P.key];
+  }
+  const rank = (r) => (r === 'host' ? 0 : r === 'guest' ? 2 : 1);
+  list.sort((a, b) => rank(a.role) - rank(b.role)); // host on the left when known (stable sort keeps drop order otherwise)
+  return list;
+}
+
+// Pair the markers of file X with those of file Y, starting from a known pair (i0, j0).
+function pairFiles(X, Y, i0, j0) {
+  const nX = X.markers.length, nY = Y.markers.length;
+  // 1) Timing files on both sides: same idx (new Duet) or same wall-clock instant.
+  const scX = X.scMarks || [], scY = Y.scMarks || [];
+  if (scX.some(Boolean) && scY.some(Boolean)) {
+    const a0 = scX[i0], b0 = scY[j0];
+    const off = a0 && b0 && a0.wallMs != null && b0.wallMs != null ? a0.wallMs - b0.wallMs : null; // clock offset, if walls are per-phone
+    const out = [{ i: i0, j: j0, how: 'first marker' }];
+    for (let i = i0 + 1; i < nX; i++) {
+      const a = scX[i];
+      if (!a) continue;
+      let bj = -1, bd = Infinity;
+      for (let j = j0 + 1; j < nY; j++) {
+        const b = scY[j];
+        if (!b) continue;
+        // idx is unique per shared marker; wall times are only a fallback for older timing files (they
+        // come from the page clock, which stops while a phone sleeps, so they can't veto an idx match)
+        const dw = a.wallMs != null && b.wallMs != null ? Math.abs(a.wallMs - b.wallMs - (off || 0)) : Infinity;
+        const same = a.idx != null && b.idx != null ? String(a.idx) === String(b.idx) : dw < 800;
+        if (same && (bj < 0 || dw < bd)) { bj = j; bd = dw; }
+      }
+      if (bj >= 0) out.push({ i, j: bj, how: 'timing files' });
+    }
+    const mono = [];
+    for (const p of out) if (!mono.length || (p.i > mono[mono.length - 1].i && p.j > mono[mono.length - 1].j)) mono.push(p);
+    if (mono.length > 1 || nX === 1 || nY === 1) return mono;
+  }
+  // 2) By order. Between consecutive shared markers both files run for the same wall-clock time, except
+  //    that a file can be SHORTER (that phone stopped recording for a while). A marker present in only
+  //    one file shows up as an interval that's too long; skip it if that makes the intervals agree.
+  //    Where there's speech, the voices get the final say.
+  const tX = X.markers.map((m) => m.time), tY = Y.markers.map((m) => m.time);
+  const pairs = [{ i: i0, j: j0, how: 'first marker' }];
+  let pi = i0, pj = j0, i = i0 + 1, j = j0 + 1;
+  while (i < nX && j < nY) {
+    const dx = tX[i] - tX[pi], dy = tY[j] - tY[pj], tol = gapTol(Math.max(dx, dy));
+    let ci = i, cj = j, how = Math.abs(dx - dy) <= tol ? 'order' : 'order (one phone paused)';
+    if (Math.abs(dx - dy) > tol) {
+      if (i + 1 < nX && Math.abs(tX[i + 1] - tX[pi] - dy) <= tol) { ci = i + 1; how = 'order (skipped a marker only one phone has)'; }
+      else if (j + 1 < nY && Math.abs(tY[j + 1] - tY[pj] - dx) <= tol) { cj = j + 1; how = 'order (skipped a marker only one phone has)'; }
+      if (ci !== i || cj !== j) {
+        const sAlt = pairScore(X, ci, Y, cj), sOrd = pairScore(X, i, Y, j);
+        if (sOrd >= CFG.xcConfOk && sOrd > 2 * sAlt) { ci = i; cj = j; how = 'order (voices agree)'; }
+      }
+    }
+    pairs.push({ i: ci, j: cj, how });
+    pi = ci; pj = cj; i = ci + 1; j = cj + 1;
+  }
+  return pairs;
+}
+
+// Where inside [A, B] (file seconds) did this file stop recording? Uses the timing file's clock log when
+// present (the audio clock stands still while wall-clock time runs on), else assumes the gap ended
+// CFG.resyncLeadSec before the next marker (Duet schedules a re-sync marker right after resuming).
+function gapPosition(e, A, B, G) {
+  // Clock log entries: new Duet writes {w: page clock ms, d: Date.now() ms, c: AudioContext time s, ...};
+  // accept long names too. Marker wallMs use the page clock (w), which stops while the phone sleeps, so
+  // entries are selected with w, but the stall is measured against Date.now (d) when it's there.
+  const W = (x) => (x.w != null ? +x.w : +x.wallMs), Dn = (x) => (x.d != null ? +x.d : W(x)), C = (x) => (x.c != null ? +x.c : +x.ctxTime);
+  const cl = e.sidecar && Array.isArray(e.sidecar.clockLog) ? e.sidecar.clockLog.filter((x) => x && isFinite(W(x)) && isFinite(C(x))) : [];
+  const wa = e.scMarks[A.i] && e.scMarks[A.i].wallMs, wb = e.scMarks[B.i] && e.scMarks[B.i].wallMs;
+  if (cl.length > 2 && wa != null && wb != null) {
+    const inside = cl.filter((x) => W(x) >= wa - 2500 && W(x) <= wb + 2500).sort((x, y) => W(x) - W(y));
+    let bk = -1, bs = 0;
+    for (let k = 0; k + 1 < inside.length; k++) {
+      const stall = (Dn(inside[k + 1]) - Dn(inside[k])) / 1000 - (C(inside[k + 1]) - C(inside[k]));
+      if (stall > bs) { bs = stall; bk = k; }
+    }
+    if (bk >= 0 && bs > 0.3) {
+      // audio-clock time at marker A, from the log entries before the stall
+      const before = inside.slice(0, bk + 1);
+      let ctxA = null;
+      for (let k = 0; k + 1 < before.length; k++) {
+        const p = before[k], q = before[k + 1];
+        if (W(p) <= wa && W(q) >= wa) { ctxA = C(p) + ((wa - W(p)) / 1000) * ((C(q) - C(p)) / Math.max(1e-6, (W(q) - W(p)) / 1000)); break; }
+      }
+      if (ctxA == null && before.length) ctxA = C(before[before.length - 1]) - (W(before[before.length - 1]) - wa) / 1000;
+      if (ctxA != null) {
+        // The stop happened between these two log entries: file time is audio-clock time, which stood still.
+        const lo = Math.max(A.t, A.t + (C(inside[bk]) - ctxA)), hi = Math.min(B.t, A.t + (C(inside[bk + 1]) - ctxA));
+        const h = B.t - CFG.resyncLeadSec;
+        if (hi >= lo) {
+          if (h >= lo - 0.05 && h <= hi + 0.05) return { p: Math.max(lo, Math.min(hi, h)), how: 'located with the timing file\'s clock log and the re-sync marker' };
+          return { p: (lo + hi) / 2, how: `located with the timing file's clock log (within ±${((hi - lo) / 2).toFixed(1)} s)` };
+        }
+      }
+    }
+  }
+  return { p: Math.max(A.t, B.t - CFG.resyncLeadSec), how: `estimated as ${CFG.resyncLeadSec} s before the next marker` };
+}
+
+// rate: this file's usual clock rate relative to the output timeline (file seconds per output second),
+// learned from the stretches where it ran continuously; used around gaps and before the first marker.
+function buildMap(e, anchors, rate = 1) {
+  const segs = [], gaps = [], dur = e.len / SR;
+  const a0 = anchors[0];
+  segs.push({ o0: a0.O - a0.t / rate, o1: a0.O, s0: 0, slope: rate });
+  let lastSlope = rate;
+  for (let k = 0; k + 1 < anchors.length; k++) {
+    const A = anchors[k], B = anchors[k + 1], ds = B.t - A.t, dO = B.O - A.O;
+    if (dO <= 0) continue;
+    if (ds >= dO * rate - gapTol(dO)) {
+      const slope = ds / dO;
+      segs.push({ o0: A.O, o1: B.O, s0: A.t, slope });
+      lastSlope = slope;
+    } else {
+      const G = dO - ds / rate, gp = gapPosition(e, A, B, G), p = gp.p, q = A.O + (p - A.t) / rate;
+      segs.push({ o0: A.O, o1: q, s0: A.t, slope: rate });
+      segs.push({ o0: q, o1: q + G, s0: p, gap: true });
+      segs.push({ o0: q + G, o1: B.O, s0: p, slope: rate });
+      gaps.push({ fileSec: p, outSec: q, durSec: G, how: gp.how });
+    }
+  }
+  const Z = anchors[anchors.length - 1];
+  segs.push({ o0: Z.O, o1: Z.O + Math.max(0, dur - Z.t) / lastSlope, s0: Z.t, slope: lastSlope });
+  return { segs: segs.filter((s) => s.o1 > s.o0 || s === segs[0]), gaps, anchors };
+}
+function srcToOut(map, t) {
+  const segs = map.segs.filter((s) => !s.gap);
+  for (const s of segs) { const s1 = s.s0 + (s.o1 - s.o0) * s.slope; if (t >= s.s0 && t <= s1) return s.o0 + (t - s.s0) / s.slope; }
+  const f = segs[0], l = segs[segs.length - 1];
+  return t < f.s0 ? f.o0 + (t - f.s0) / f.slope : l.o0 + (t - l.s0) / l.slope;
+}
+
+function computeAlignment() {
+  const people = groupPeople();
+  const res = { people, warnings: [], error: null, maps: new Map(), events: [] };
+  if (S.entries.some((e) => !['done', 'error', 'skipped'].includes(e.state))) return null;
+  if (!people.length) {
+    if (S.entries.length) { res.error = 'None of these files can be used (see the notes next to each file).'; return res; }
+    return null;
+  }
+  const sessions = [...new Set(people.flatMap((P) => P.entries).map((e) => personInfo(e).session).filter(Boolean))];
+  res.session = sessions.length === 1 ? sessions[0] : null;
+  if (sessions.length > 1) res.warnings.push(`These files come from different Duet sessions (${sessions.join(', ')}). They can only be lined up if they were recorded together.`);
+  if (people.length === 1) { res.error = `Only ${people[0].name}'s recording so far. Add the other person's file too.`; return res; }
+  if (people.length > 2) { res.error = `These files look like they're from ${people.length} different people (${people.map((p) => p.name).join(', ')}). Duet records two people; remove the extra files, or rename them so each person's files share a name.`; return res; }
+  for (const P of people) for (const e of P.entries) if (e.state === 'done') associateSidecar(e);
+  const [A, B] = people;
+  const other = (P) => (P === A ? B : A);
+  const placed = new Set(), pairsOf = []; // {a: entry of A, b: entry of B, pairs:[{i (in a), j (in b), how}]}
+  const addPairs = (x, y, prs) => { if (x.__p === A) pairsOf.push({ a: x, b: y, pairs: prs }); else pairsOf.push({ a: y, b: x, pairs: prs.map((p) => ({ i: p.j, j: p.i, how: p.how })) }); };
+  for (const P of people) for (const e of P.entries) e.__p = P;
+
+  // Seed: both people's first usable files, both part 1 -> their first markers are the shared start marker.
+  const fa = A.entries.find(usable), fb = B.entries.find(usable);
+  if (!fa || !fb) {
+    const P = !fa ? A : B;
+    res.error = `Couldn't find the sync chirps in ${P.name}'s recording${P.entries.length > 1 ? 's' : ''}, so the files can't be lined up.`;
+    return res;
+  }
+  // With new-style timing files (shared idx) the seed pair is found by idx, wherever it is.
+  let seed = null;
+  const ia = fa.scMarks[0], jb = fb.scMarks[0];
+  if (ia && jb && ia.idx != null && jb.idx != null) {
+    if (String(ia.idx) === String(jb.idx)) seed = [0, 0];
+    else {
+      const j = fb.scMarks.findIndex((m) => m && String(m.idx) === String(ia.idx)), i = fa.scMarks.findIndex((m) => m && String(m.idx) === String(jb.idx));
+      if (j >= 0) seed = [0, j]; else if (i >= 0) seed = [i, 0];
+    }
+  }
+  if (!seed && fa.part === fb.part) seed = [0, 0];
+  const seeded = !!seed;
+  if (seed) { addPairs(fa, fb, pairFiles(fa, fb, seed[0], seed[1])); placed.add(fa); placed.add(fb); }
+  else placed.add(fa.part <= fb.part ? fa : fb);
+
+  // Place the remaining files (part 2, 3, ...) at a matching marker in the other person's placed files.
+  const pairedMarks = () => {
+    const s = new Set();
+    for (const g of pairsOf) for (const p of g.pairs) { s.add(g.a.id + ':' + p.i); s.add(g.b.id + ':' + p.j); }
+    return s;
+  };
+  for (let guard = 0, progress = true; progress && guard < 20; guard++) {
+    progress = false;
+    for (const P of people) for (const e of P.entries) {
+      if (placed.has(e) || !usable(e)) continue;
+      const Q = other(P), used = pairedMarks(), prev = P.entries.filter((x) => placed.has(x) && x.part < e.part);
+      let cands = [];
+      for (const q of Q.entries) {
+        if (!placed.has(q)) continue;
+        q.markers.forEach((m, j) => { if (!used.has(q.id + ':' + j)) cands.push({ q, j }); });
+      }
+      if (prev.length) { // must come after the last shared marker of this person's previous part
+        const last = prev[prev.length - 1], g = pairsOf.filter((x) => x.a === last || x.b === last).flatMap((x) => x.pairs.map((p) => (x.a === last ? { q: x.b, j: p.j } : { q: x.a, j: p.i })));
+        if (g.length) { const lq = g[g.length - 1]; cands = cands.filter((c) => c.q !== lq.q || c.j > lq.j); }
+      }
+      let pick = null, how = '';
+      const s0 = e.scMarks[0];
+      if (s0 && s0.idx != null) { const c = cands.find((c) => c.q.scMarks[c.j] && String(c.q.scMarks[c.j].idx) === String(s0.idx)); if (c) { pick = c; how = 'timing files'; } }
+      if (!pick && s0 && s0.wallMs != null) {
+        const ref = pairsOf.find((g) => g.a.scMarks[g.pairs[0].i] && g.b.scMarks[g.pairs[0].j]);
+        let off = 0;
+        if (ref) { const wa = ref.a.scMarks[ref.pairs[0].i].wallMs, wb = ref.b.scMarks[ref.pairs[0].j].wallMs; if (wa != null && wb != null) off = P === A ? wa - wb : wb - wa; }
+        const near = cands.filter((c) => c.q.scMarks[c.j] && c.q.scMarks[c.j].wallMs != null).map((c) => ({ c, d: Math.abs(s0.wallMs - off - c.q.scMarks[c.j].wallMs) })).filter((x) => x.d < 1500).sort((x, y) => x.d - y.d);
+        if (near.length) { pick = near[0].c; how = 'timing files (clock)'; }
+      }
+      if (!pick && cands.length) {
+        for (const c of cands) c.score = pairScore(e, 0, c.q, c.j);
+        const ranked = cands.slice().sort((x, y) => y.score - x.score);
+        if (ranked[0].score >= CFG.xcConfOk) { pick = ranked[0]; how = cands.length > 1 ? 'matching the voices' : 'the only free marker (voices agree)'; }
+        else if (cands.length === 1) { pick = cands[0]; how = 'the only free marker'; }
+        else {
+          pick = cands[0]; how = 'first free marker (unverified)';
+          res.warnings.push(`${P.name}'s part ${e.part}: several markers in ${Q.name}'s recording could be where it rejoined and the voices didn't clearly pick one. Used the first; listen to check.`);
+        }
+      }
+      if (pick) {
+        const prs = pairFiles(e, pick.q, 0, pick.j);
+        prs[0].how = 'rejoin: ' + how;
+        addPairs(e, pick.q, prs);
+        placed.add(e); progress = true;
+      }
+    }
+  }
+  if (!seeded && !pairsOf.length) { res.error = 'Couldn\'t find a marker that both recordings share.'; return res; }
+
+  // Events, ordered along A's files (parts in order, then time).
+  const evs = [];
+  for (const g of pairsOf) for (const p of g.pairs) {
+    const sa = g.a.scMarks[p.i], sb = g.b.scMarks[p.j];
+    const walls = [sa && sa.wallMs, sb && sb.wallMs].filter((w) => w != null);
+    evs.push({ a: g.a, i: p.i, b: g.b, j: p.j, ta: g.a.markers[p.i].time, tb: g.b.markers[p.j].time, how: p.how,
+      wallA: sa && sa.wallMs, wallB: sb && sb.wallMs, idx: (sa && sa.idx) != null ? sa.idx : sb && sb.idx, kind: (sa && sa.kind) || (sb && sb.kind) || null, nWalls: walls.length });
+  }
+  evs.sort((x, y) => (x.a.part - y.a.part) || (x.ta - y.ta));
+  const events = [];
+  for (const ev of evs) {
+    const prevB = events.filter((x) => x.b === ev.b).pop();
+    if (prevB && prevB.tb >= ev.tb) { res.warnings.push(`Ignored a marker pairing that went backwards in time (${ev.b.name} at ${fmtT(ev.tb)}).`); continue; }
+    if (events.some((x) => (x.a === ev.a && x.i === ev.i) || (x.b === ev.b && x.j === ev.j))) continue;
+    events.push(ev);
+  }
+  // Output time of each event: the longest time either file spent between consecutive events (the other
+  // one may have paused), or the wall-clock time if both files are shorter than it.
+  // Walls from one phone are compared only with the same phone's walls, so clock offsets don't matter.
+  // Pass 1 learns each file's clock rate from stretches where both files ran continuously (the output
+  // timeline follows the faster clock); pass 2 uses those rates so stretches with a gap are measured
+  // on the same clock as the others.
+  const spans = (pv, ev) => {
+    const r = [];
+    if (ev.a === pv.a) r.push({ f: ev.a, d: ev.ta - pv.ta });
+    if (ev.b === pv.b) r.push({ f: ev.b, d: ev.tb - pv.tb });
+    return r;
+  };
+  const acc = new Map();
+  for (let k = 1; k < events.length; k++) {
+    const sp = spans(events[k - 1], events[k]);
+    if (sp.length !== 2 || Math.abs(sp[0].d - sp[1].d) > gapTol(Math.max(sp[0].d, sp[1].d))) continue;
+    const dO = Math.max(sp[0].d, sp[1].d);
+    for (const x of sp) { const a = acc.get(x.f) || [0, 0]; a[0] += x.d; a[1] += dO; acc.set(x.f, a); }
+  }
+  const rateOf = (f) => (acc.has(f) && acc.get(f)[1] > 0 ? acc.get(f)[0] / acc.get(f)[1] : 1);
+  res.rateOf = rateOf;
+  for (let k = 0; k < events.length; k++) {
+    const ev = events[k];
+    if (k === 0) { ev.O = 0; continue; }
+    const pv = events[k - 1], ds = spans(pv, ev).map((x) => x.d / rateOf(x.f));
+    let d = ds.length ? Math.max(...ds) : null;
+    const w = [ev.wallA != null && pv.wallA != null ? (ev.wallA - pv.wallA) / 1000 : null, ev.wallB != null && pv.wallB != null ? (ev.wallB - pv.wallB) / 1000 : null].filter((x) => x != null);
+    const wall = w.length ? median1(w) : null;
+    if (wall != null && (d == null || wall > d + 1.0)) d = wall;
+    if (d == null) {
+      // no file spans both events (both people switched to new parts) and no timing files: assume back to back
+      d = Math.max(0.5, (pv.a.len / SR - pv.ta) + ev.ta);
+      res.warnings.push('Couldn\'t measure the time between two parts; assumed they follow each other directly.');
+    }
+    ev.O = pv.O + Math.max(1e-3, d);
+  }
+  res.events = events;
+
+  // One map per placed file.
+  for (const P of people) for (const e of P.entries) {
+    const anchors = [];
+    for (const ev of events) {
+      if (ev.a === e) anchors.push({ t: ev.ta, O: ev.O, i: ev.i });
+      if (ev.b === e) anchors.push({ t: ev.tb, O: ev.O, i: ev.j });
+    }
+    anchors.sort((x, y) => x.t - y.t);
+    if (!anchors.length) continue;
+    const map = buildMap(e, anchors, rateOf(e));
+    for (const s of map.segs) if (!s.gap && Math.abs(s.slope - 1) > 0.005) res.warnings.push(`${e.name}: between ${fmtT(s.s0)} and ${fmtT(s.s0 + (s.o1 - s.o0) * s.slope)} it has ${Math.abs((s.slope - 1) * (s.o1 - s.o0)).toFixed(2)} s ${s.slope > 1 ? 'more' : 'less'} audio than the other recording, which isn't a normal clock difference. The markers may be mismatched; listen to check.`);
+    res.maps.set(e, map);
+  }
+  for (const P of people) for (const e of P.entries) {
+    if (res.maps.has(e)) continue;
+    if (e.state === 'error') res.warnings.push(`${e.name} couldn't be read and was left out.`);
+    else if (!usable(e)) res.warnings.push(`No sync chirps found in ${e.name}; it was left out.`);
+    else res.warnings.push(`Couldn't find where ${e.name} belongs (no marker in it matches the other recording); it was left out.`);
+  }
+  for (const P of people) if (!P.entries.some((e) => res.maps.has(e))) { res.error = `Couldn't place any of ${P.name}'s recordings.`; return res; }
+  let T0 = Infinity, T1 = -Infinity;
+  for (const [, m] of res.maps) { T0 = Math.min(T0, m.segs[0].o0); T1 = Math.max(T1, m.segs[m.segs.length - 1].o1); }
+  res.T0 = T0; res.T1 = T1; res.total = Math.round((T1 - T0) * SR);
+  // Drift between the phones, from stretches where both ran continuously.
+  const dr = [];
+  for (let k = 1; k < events.length; k++) {
+    const ev = events[k], pv = events[k - 1];
+    if (ev.a !== pv.a || ev.b !== pv.b) continue;
+    const da = ev.ta - pv.ta, db = ev.tb - pv.tb;
+    if (Math.abs(da - db) <= gapTol(Math.max(da, db))) dr.push({ ppm: ((db - da) / Math.max(da, db)) * 1e6, dur: Math.max(da, db) });
+  }
+  if (dr.length) {
+    const tot = dr.reduce((s, d) => s + d.dur, 0), ppm = dr.reduce((s, d) => s + d.ppm * d.dur, 0) / tot;
+    res.drift = { ppm, spanSec: tot, correctedMs: (Math.abs(ppm) * tot) / 1000, intervals: dr.length };
+  }
+  return res;
+}
+
+function filesOf(res, P) { return P.entries.filter((e) => res.maps.has(e)).map((e) => ({ entry: e, map: res.maps.get(e) })); }
+function outIndex(res, o) { return Math.round((o - res.T0) * SR); }
+function muteRanges(res, files) {
+  const r = [];
+  for (const f of files) for (const t of markerTimes(f.entry)) {
+    const at = outIndex(res, srcToOut(f.map, t));
+    r.push([at - Math.round(CFG.muteBeforeSec * SR), at + Math.round(CFG.muteAfterSec * SR)]);
+  }
+  return r;
+}
+// Fill out[0..n) (Int16) with a person's own mic for output samples [pos, pos+n). Later parts win overlaps.
+function fillPerson(res, files, mutes, pos, n, out) {
+  for (const f of files) {
+    const d = f.entry.left, L = d.length;
+    for (const sg of f.map.segs) {
+      if (sg.gap) continue;
+      const a = Math.max(pos, Math.ceil((sg.o0 - res.T0) * SR - 1e-6)), b = Math.min(pos + n, Math.ceil((sg.o1 - res.T0) * SR - 1e-6));
+      if (b <= a) continue;
+      const base = sg.s0 * SR - (sg.o0 - res.T0) * SR * sg.slope, sl = sg.slope;
+      for (let k = a; k < b; k++) {
+        const si = Math.round(base + k * sl); // nearest sample: drift of tens of ppm means one slipped sample every few seconds
+        if (si >= 0 && si < L) out[k - pos] = d[si];
+      }
+    }
+  }
+  const ramp = Math.round(0.005 * SR);
+  for (const [m0, m1] of mutes) {
+    const a = Math.max(pos, m0), b = Math.min(pos + n, m1);
+    for (let i = a; i < b; i++) {
+      const g = Math.min(1, Math.max(0, (i - m0) / ramp), Math.max(0, (m1 - i) / ramp));
+      out[i - pos] = Math.round(out[i - pos] * (1 - g));
+    }
+  }
+}
+function coverage(res, files, G0, n) {
+  let c = 0;
+  for (const f of files) for (const sg of f.map.segs) {
+    if (sg.gap) continue;
+    const a = Math.max(G0, (sg.o0 - res.T0) * SR), b = Math.min(G0 + n, (sg.o1 - res.T0) * SR);
+    if (b > a) c += b - a;
+  }
+  return c / n;
+}
+async function crossChecks(res, gen) {
+  const checks = [];
+  for (const P of res.people) {
+    const Q = res.people.find((x) => x !== P), qFiles = filesOf(res, Q), qMutes = muteRanges(res, qFiles);
+    let todo = [];
+    for (const f of filesOf(res, P)) for (const w of f.entry.rightWins) todo.push({ f, w });
+    if (todo.length > CFG.xcMaxPerDirection) { const n = CFG.xcMaxPerDirection; todo = Array.from({ length: n }, (_, k) => todo[Math.round((k * (todo.length - 1)) / (n - 1))]); }
+    for (const { f, w } of todo) {
+      const o0 = srcToOut(f.map, w.ownStart / SR), o1 = srcToOut(f.map, (w.ownStart + w.W) / SR);
+      if (Math.abs(o1 - o0 - w.W / SR) > 0.05) continue; // window crosses a gap
+      const G0 = outIndex(res, o0), sl = (w.W / SR) / Math.max(1e-6, o1 - o0); // heard-file seconds per output second
+      const n = Math.ceil(w.W / sl) + 2;
+      if (coverage(res, qFiles, G0, n) < 0.6) continue;
+      const i16 = new Int16Array(n);
+      fillPerson(res, qFiles, qMutes, G0, n, i16);
+      // resample the other person's mic onto this file's clock, so clock drift can't smear the correlation
+      const own = new Float32Array(w.W);
+      for (let k = 0; k < w.W; k++) own[k] = i16[Math.min(n - 1, Math.round(k / sl))] / 32768;
+      if (rms(own) < 1e-4 || rms(w.data) < 1e-4) continue;
+      const r = gcc(w.data, own, w.neg, w.pos);
+      checks.push({ heardBy: P.key, speaker: Q.key, outSec: G0 / SR, lagMs: r.lagMs, conf: r.conf, kind: w.kind, file: f.entry.name });
+      await maybeYield(gen);
+    }
+  }
+  checks.sort((a, b) => a.outSec - b.outSec);
+  res.checks = checks;
+  // Lag trend (only informative when a file has few markers, e.g. from an older Duet).
+  res.lagTrend = [];
+  for (const P of res.people) {
+    const Q = res.people.find((x) => x !== P);
+    const good = checks.filter((c) => c.heardBy === P.key && c.conf >= CFG.xcConfOk && c.lagMs > -100 && c.lagMs < 1000);
+    if (good.length < 2 || good[good.length - 1].outSec - good[0].outSec < 120) continue;
+    res.lagTrend.push({ heardBy: P.key, speaker: Q.key, spanSec: good[good.length - 1].outSec - good[0].outSec, minLagMs: Math.min(...good.map((c) => c.lagMs)), maxLagMs: Math.max(...good.map((c) => c.lagMs)), points: good.length });
+  }
+}
+
+/* =====================================================================
+   Pipeline
+   ===================================================================== */
+function schedule() {
+  const gen = S.gen;
+  S.queue = S.queue.then(() => runPipeline(gen)).catch((err) => {
+    if (err instanceof Cancelled) return;
+    console.error(err);
+    setStatus('Something went wrong: ' + (err && err.message ? err.message : err), 'bad');
+  });
+  return S.queue;
+}
+async function runPipeline(gen) {
+  if (gen !== S.gen) return;
+  attachSidecars();
+  S.align = null; clearOutputs();
+  render();
+  try {
+    for (const e of S.entries) {
+      if (gen !== S.gen) return;
+      if (e.state !== 'queued') continue;
+      await analyzeEntry(e, gen);
+      render();
+    }
+  } catch (err) {
+    for (const e of S.entries) if (!['done', 'error', 'queued', 'skipped'].includes(e.state)) { e.state = 'queued'; e.msg = ''; }
+    throw err;
+  }
+  if (gen !== S.gen) return;
+  const res = computeAlignment();
+  if (!res) { render(); if (!S.entries.length) setStatus('Add both people\'s recordings to begin.'); return; }
+  if (res.error) { S.align = res; render(); setStatus(res.error, 'bad'); return; }
+  setStatus('Found the sync chirps. Checking the alignment against the voices…', 'busy', -1);
+  await yieldToUI();
+  await crossChecks(res, gen);
+  if (gen !== S.gen) return;
+  S.align = res;
+  render();
+  const [L, R] = ordered(res);
+  setStatus(`Aligned. ${startSentence(res, L, R)} Choose the channels below, then make the WAV files.`, res.warnings.length ? 'warn' : 'ok');
+}
+function ordered(res) { const p = res.people.slice(); return S.swap ? p.reverse() : p; }
+function startSentence(res, A, B) {
+  const a = filesOf(res, A)[0], b = filesOf(res, B)[0];
+  const d = b.map.segs[0].o0 - a.map.segs[0].o0;
+  if (a.entry.part > 1 || b.entry.part > 1) return 'Lined up.';
+  if (Math.abs(d) < 0.0005) return `Both recordings started at the same moment.`;
+  return d < 0 ? `${B.name}'s recording started ${Math.abs(d).toFixed(3)} s before ${A.name}'s.` : `${A.name}'s recording started ${d.toFixed(3)} s before ${B.name}'s.`;
+}
+
+/* =====================================================================
+   WAV export (streamed: 10-second blocks, folded into Blobs every 16 MB)
+   ===================================================================== */
+const LITTLE_ENDIAN = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1;
+function wavHeader(channels, rate, frames) {
+  const bytes = frames * channels * 2, b = new ArrayBuffer(44), v = new DataView(b);
+  const str = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  str(0, 'RIFF'); v.setUint32(4, 36 + bytes, true); str(8, 'WAVE');
+  str(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, channels, true);
+  v.setUint32(24, rate, true); v.setUint32(28, rate * channels * 2, true); v.setUint16(32, channels * 2, true); v.setUint16(34, 16, true);
+  str(36, 'data'); v.setUint32(40, bytes, true);
+  return b;
+}
+function makeSink(header) {
+  let blob = null, parts = [header], bytes = header.byteLength;
+  return {
+    push(arr) {
+      if (!LITTLE_ENDIAN) { const u = new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength); for (let i = 0; i < u.length; i += 2) { const t = u[i]; u[i] = u[i + 1]; u[i + 1] = t; } }
+      parts.push(arr); bytes += arr.byteLength;
+      if (bytes >= CFG.wavFoldBytes) { blob = new Blob(blob ? [blob].concat(parts) : parts); parts = []; bytes = 0; }
+    },
+    finish() { return new Blob(blob ? [blob].concat(parts) : parts, { type: 'audio/wav' }); },
+  };
+}
+async function writeWavs(res, A, B, mute, gen, onProgress) {
+  const total = res.total, fa = filesOf(res, A), fb = filesOf(res, B);
+  const ma = mute ? muteRanges(res, fa) : [], mb = mute ? muteRanges(res, fb) : [];
+  const st = makeSink(wavHeader(2, SR, total)), sa = makeSink(wavHeader(1, SR, total)), sb = makeSink(wavHeader(1, SR, total));
+  const BLK = CFG.wavBlockSec * SR;
+  for (let pos = 0; pos < total; pos += BLK) {
+    const n = Math.min(BLK, total - pos), a = new Int16Array(n), b = new Int16Array(n), s = new Int16Array(2 * n);
+    fillPerson(res, fa, ma, pos, n, a); fillPerson(res, fb, mb, pos, n, b);
+    for (let i = 0, j = 0; i < n; i++, j += 2) { s[j] = a[i]; s[j + 1] = b[i]; }
+    st.push(s); sa.push(a); sb.push(b);
+    if (onProgress) onProgress(Math.min(1, (pos + n) / total));
+    await maybeYield(gen);
+  }
+  return { stereo: st.finish(), a: sa.finish(), b: sb.finish() };
+}
+function personWavNames(A, B) {
+  let a = safeFileName(A.name) + '.wav', b = safeFileName(B.name) + '.wav';
+  if (a.toLowerCase() === b.toLowerCase() || a === 'conversation_aligned.wav' || b === 'conversation_aligned.wav') { a = safeFileName(A.name) + '_left.wav'; b = safeFileName(B.name) + '_right.wav'; }
+  return [a, b];
+}
+
+/* ---------------- alignment.json ---------------- */
+function transcriptionGuide(A, B, fa, fb) {
+  const lang = ((navigator.language || 'en').split('-')[0] || 'en').toLowerCase();
+  const py = [
+    'import json',
+    `tracks = {${JSON.stringify(A.name)}: "transcripts/${fa.replace(/\.wav$/, '')}.json", ${JSON.stringify(B.name)}: "transcripts/${fb.replace(/\.wav$/, '')}.json"}`,
+    'rows = []',
+    'for speaker, path in tracks.items():',
+    '    for seg in json.load(open(path))["segments"]:',
+    '        rows.append((seg["start"], seg["end"], speaker, seg["text"].strip()))',
+    'rows.sort()',
+    'with open("transcript.txt", "w") as f:',
+    '    for start, end, speaker, text in rows:',
+    '        m, s = divmod(start, 60)',
+    '        f.write(f"[{int(m):02d}:{s:05.2f}] {speaker}: {text}\\n")',
+    'print(open("transcript.txt").read())',
+  ].join('\n');
+  return {
+    summary: `Each person's WAV (${fa}, ${fb}) contains only that person's own microphone, and every exported WAV shares one timeline (0 s = start of the file). Transcribe the two person files separately, then merge the segments by start time, labelling each with the person's name. No speaker diarization is needed.`,
+    whisperx: [
+      'pip install whisperx',
+      `whisperx "${fa}" --model large-v3 --language ${lang} --output_format json --output_dir transcripts`,
+      `whisperx "${fb}" --model large-v3 --language ${lang} --output_format json --output_dir transcripts`,
+      '# on a machine without a GPU add: --device cpu --compute_type int8',
+    ],
+    openaiWhisper: [
+      'pip install -U openai-whisper',
+      `whisper "${fa}" --model large-v3 --language ${lang} --word_timestamps True --condition_on_previous_text False --output_format json --output_dir transcripts`,
+      `whisper "${fb}" --model large-v3 --language ${lang} --word_timestamps True --condition_on_previous_text False --output_format json --output_dir transcripts`,
+    ],
+    mergePython: py,
+    notes: [
+      `Change --language ${lang} if the conversation is in another language (or drop it to auto-detect).`,
+      'Timestamps from both transcripts are directly comparable because the WAVs are aligned; no offsets need to be added.',
+      'Each phone can faintly pick up the other person through its speaker. If the same words show up in both transcripts at the same time, keep the one from the speaker\'s own track.',
+      'WhisperX skips silence with voice-activity detection. With plain Whisper, --condition_on_previous_text False reduces made-up text during the long silences while the other person talks.',
+      'conversation_aligned.wav (left and right = the two people) is for listening. For transcription use the per-person files.',
+    ],
+  };
+}
+function nameOf(res, key) { const P = res.people.find((p) => p.key === key); return P ? P.name : key; }
+function buildJson(res, A, B, mute, names) {
+  const [fa, fb] = names;
+  const outT = (o) => r4(o - res.T0);
+  const check = (c) => ({
+    heardBy: nameOf(res, c.heardBy), speaker: nameOf(res, c.speaker), atOutputSec: r3(c.outSec),
+    kind: c.kind === 'after-marker' ? 'just after a marker' : 'later in the call', lagMs: r1(c.lagMs), confidence: r1(c.conf),
+    consistent: c.conf >= CFG.xcConfOk && c.lagMs >= 20 && c.lagMs <= 500,
+  });
+  const a0 = filesOf(res, A)[0], b0 = filesOf(res, B)[0], d = b0.map.segs[0].o0 - a0.map.segs[0].o0;
+  return {
+    app: 'duet-align', version: VERSION, createdAt: new Date().toISOString(), session: res.session || null,
+    output: {
+      sampleRate: SR, bitsPerSample: 16, durationSec: r3(res.total / SR),
+      start: 'zero-padded: 0 s is the moment the EARLIER recording began, so no audio is dropped; the later-starting track begins with silence',
+      markersSilenced: !!mute,
+      files: {
+        'conversation_aligned.wav': { channels: 2, left: A.name, right: B.name },
+        [fa]: { channels: 1, person: A.name },
+        [fb]: { channels: 1, person: B.name },
+      },
+    },
+    howToUseMaps: 'Each recording has a piecewise-linear map from its own time to the output time: for a file time t inside a segment, output = outputStartSec + (t - fileStartSec) / slope. Gap segments are stretches where that phone was not recording (filled with silence). slope != 1 is clock drift between the phones.',
+    events: res.events.map((ev) => ({
+      outputSec: outT(ev.O), kind: ev.kind, idx: ev.idx != null ? ev.idx : undefined, pairedBy: ev.how,
+      [A === res.people[0] ? 'left' : 'right']: { file: ev.a.name, fileSec: r4(ev.ta) },
+      [A === res.people[0] ? 'right' : 'left']: { file: ev.b.name, fileSec: r4(ev.tb) },
+    })),
+    clockDrift: res.drift ? { ppm: r1(Math.abs(res.drift.ppm)), overMinutes: r1(res.drift.spanSec / 60), correctedMs: r1(res.drift.correctedMs),
+      meaning: `${res.people[1].name}'s recording ran ${res.drift.ppm >= 0 ? 'fast' : 'slow'} relative to ${res.people[0].name}'s by this much; corrected by the piecewise maps` } : null,
+    offset: { rightMinusLeftStartSec: r4(d), meaning: startSentence(res, A, B) },
+    people: [A, B].map((P, i) => ({
+      name: P.name, channel: i ? 'right' : 'left', wav: i ? fb : fa,
+      recordings: P.entries.map((e) => {
+        const map = res.maps.get(e);
+        return {
+          file: e.name, bytes: e.size, part: e.part, durationSec: e.duration != null ? r3(e.duration) : null, channels: e.channels,
+          status: e.state === 'skipped' ? 'skipped: ' + e.msg : map ? 'aligned' : 'not placed', timingFile: e.sidecarName || null,
+          markers: e.markers.map((m, k) => ({
+            fileSec: r4(m.time), outputSec: map ? outT(srcToOut(map, m.time)) : null, confidence: r1(m.conf), amplitude: r3(m.amp),
+            leftRightAgreementMs: m.lrMs != null ? r3(m.lrMs) : null,
+            timingFile: e.scMarks && e.scMarks[k] ? { idx: e.scMarks[k].idx, kind: e.scMarks[k].kind, wallMs: e.scMarks[k].wallMs } : undefined,
+          })),
+          placedAtSec: map ? outT(map.segs[0].o0) : null,
+          map: map ? map.segs.map((s) => s.gap ? { gap: true, outputStartSec: outT(s.o0), outputEndSec: outT(s.o1), atFileSec: r4(s.s0) }
+            : { outputStartSec: outT(s.o0), outputEndSec: outT(s.o1), fileStartSec: r4(s.s0), slope: +s.slope.toFixed(8) }) : null,
+          gaps: map ? map.gaps.map((g) => ({ atFileSec: r3(g.fileSec), atOutputSec: outT(g.outSec), durationSec: r3(g.durSec), locatedBy: g.how })) : [],
+        };
+      }),
+    })),
+    crossCheck: {
+      description: 'Informational. Compares each person\'s own mic with how the other phone heard them over the call (that phone\'s right channel), after alignment. The heard copy should trail by the call\'s one-way delay, typically +50 to +300 ms. If the alignment were off, this lag would be off by the same amount.',
+      results: res.checks.map(check),
+      lagTrend: res.lagTrend.map((t) => ({ heardBy: nameOf(res, t.heardBy), speaker: nameOf(res, t.speaker), overMinutes: r1(t.spanSec / 60), minLagMs: r1(t.minLagMs), maxLagMs: r1(t.maxLagMs) })),
+    },
+    warnings: res.warnings,
+    transcription: transcriptionGuide(A, B, fa, fb),
+  };
+}
+
+/* =====================================================================
+   UI
+   ===================================================================== */
+function setStatus(text, kind = '', progress = null) {
+  $('statusText').textContent = text;
+  $('statusDot').className = 'dot ' + (kind || '');
+  const pb = $('progress');
+  if (progress == null) pb.classList.add('hidden');
+  else {
+    pb.classList.remove('hidden');
+    pb.classList.toggle('indet', progress < 0);
+    pb.firstElementChild.style.width = progress < 0 ? '' : `${Math.round(progress * 100)}%`;
+  }
+}
+function markerLine(e) {
+  if (e.state === 'error') return `<span class="mk bad">${esc(e.err)}</span>`;
+  if (e.state === 'skipped') return `<span class="mk skip">${esc(e.msg)}</span>`;
+  if (e.state !== 'done') return `<span class="mk busy">${esc(e.msg || 'Waiting…')}</span>`;
+  const ms = e.markers;
+  if (!ms.length) return `<span class="mk bad">No sync chirps found in this file.</span>`;
+  const m = ms[0], minConf = Math.min(...ms.map((x) => x.conf)), strong = minConf >= CFG.confStrong;
+  const cf = (c) => (c >= 999 ? '999+' : String(Math.round(c)));
+  let s = ms.length === 1 ? `Sync chirps at ${fmtT(m.time)} · confidence ${cf(m.conf)}`
+    : `${ms.length} sync markers, first at ${fmtT(m.time)}, last at ${fmtT(ms[ms.length - 1].time)} · confidence ${cf(minConf)}${ms.length > 1 ? '+' : ''}`;
+  if (!strong) s += ' (weak: check by ear)';
+  const lr = Math.max(0, ...ms.map((x) => x.lrMs || 0));
+  if (lr > 2) s += ` · left/right disagree by up to ${lr.toFixed(1)} ms`;
+  return `<span class="mk ${strong ? 'ok' : 'warn'}">${esc(s)}</span>`;
+}
+function render() {
+  const any = S.entries.length || S.sidecars.length;
+  $('filesCard').classList.toggle('hidden', !any);
+  const rows = S.entries.map((e) => {
+    const pi = personInfo(e);
+    const bits = [pi.name, pi.part > 1 ? `part ${pi.part}` : null, e.duration != null ? fmtDur(e.duration) : null,
+      e.channels ? (e.channels === 1 ? 'mono' : e.channels === 2 ? 'stereo' : `${e.channels} channels`) : null, fmtBytes(e.size),
+      e.sidecar ? 'with timing file' : null].filter(Boolean).join(' · ');
+    return `<li><div class="meta"><b>${esc(e.name)}</b><small>${esc(bits)}</small>${markerLine(e)}</div>` +
+      `<button class="x" data-rm="${e.id}" aria-label="Remove ${esc(e.name)}" title="Remove">×</button></li>`;
+  });
+  for (const s of S.sidecars) {
+    const used = S.entries.some((e) => e.sidecarName === s.name);
+    rows.push(`<li><div class="meta"><b>${esc(s.name)}</b><small>timing file · ${used ? 'matched' : 'no matching recording yet'}</small></div>` +
+      `<button class="x" data-rmj="${esc(s.name)}" aria-label="Remove ${esc(s.name)}" title="Remove">×</button></li>`);
+  }
+  $('fileList').innerHTML = rows.join('');
+  renderResult();
+  renderBanner();
+  updateHowTo();
+}
+function renderBanner() {
+  const msgs = [];
+  if (S.align && S.align.warnings) msgs.push(...S.align.warnings);
+  const hasParts = S.entries.some((e) => personInfo(e).part > 1);
+  if (!hasParts) for (const e of S.entries) {
+    const rj = e.sidecar && Array.isArray(e.sidecar.markers) ? e.sidecar.markers.filter((m) => /rejoin/.test(m.kind || '')) : [];
+    if (rj.length) msgs.push(`${e.name}'s timing file mentions ${rj.length === 1 ? 'a rejoin' : rj.length + ' rejoins'} (a phone dropped out). If the other person has a _part2 file, add it too.`);
+  }
+  $('banner').innerHTML = msgs.map((m) => `<p>${esc(m)}</p>`).join('');
+  $('banner').classList.toggle('hidden', !msgs.length);
+}
+function renderResult() {
+  const res = S.align;
+  const show = !!(res && !res.error && res.checks);
+  $('resultCard').classList.toggle('hidden', !show);
+  if (!show) return;
+  const [A, B] = ordered(res);
+  const nEv = res.events.length;
+  $('summary').textContent = `${startSentence(res, A, B)} Lined up on ${nEv === 1 ? 'the shared sync marker' : nEv + ' shared sync markers'}; the aligned files are ${fmtDur(res.total / SR)} long.`;
+  // timeline
+  const tot = res.T1 - res.T0, pct = (o) => `${(((o - res.T0) / tot) * 100).toFixed(3)}%`, wid = (d) => `${((d / tot) * 100).toFixed(3)}%`;
+  const row = (P, cls) => {
+    const bars = filesOf(res, P).map((f) => f.map.segs.map((s) => s.gap
+      ? `<i class="tl-gap" style="left:${pct(s.o0)};width:${wid(s.o1 - s.o0)}" title="not recording: ${(s.o1 - s.o0).toFixed(1)} s"></i>`
+      : `<i class="tl-part" style="left:${pct(s.o0)};width:${wid(s.o1 - s.o0)}" title="${esc(f.entry.name)}"></i>`).join('') +
+      f.entry.markers.map((m) => `<b class="tl-mark" style="left:${pct(srcToOut(f.map, m.time))}" title="marker"></b>`).join('')).join('');
+    return `<div class="tl-row ${cls}"><span title="${esc(P.name)}">${esc(P.name)}</span><div class="tl-track">${bars}</div></div>`;
+  };
+  $('timeline').innerHTML = row(A, 'a') + row(B, 'b') + `<div class="tl-axis"><span>0:00</span><span>${fmtDur(tot)}</span></div>`;
+  // checks
+  const items = [];
+  for (const [P, Q] of [[A, B], [B, A]]) {
+    const cs = res.checks.filter((x) => x.heardBy === P.key);
+    const good = cs.filter((c) => c.conf >= CFG.xcConfOk);
+    if (!good.length) { items.push(`<li class="info">Voice check (${esc(Q.name)} → ${esc(P.name)}): not enough speech after the markers to compare.</li>`); continue; }
+    const lags = good.map((c) => c.lagMs), lo = Math.min(...lags), hi = Math.max(...lags), ok = good.every((c) => c.lagMs >= 20 && c.lagMs <= 500);
+    const range = good.length === 1 ? `${Math.round(lo)} ms` : Math.round(hi - lo) <= 3 ? `${Math.round(median1(lags))} ms` : `${Math.round(lo)}–${Math.round(hi)} ms`;
+    items.push(`<li class="${ok ? 'ok' : 'warn'}">Voice check: ${esc(Q.name)}'s voice reaches ${esc(P.name)}'s recording ${range} after ${esc(Q.name)}'s own mic ` +
+      `${ok ? '(a normal call delay; 50–300 ms is typical)' : '(unusual: listen to check the alignment around the markers)'}${good.length > 1 ? `, checked at ${good.length} points` : ''}.</li>`);
+  }
+  if (res.drift && res.drift.correctedMs >= 1) {
+    items.push(`<li class="ok">The phones' clocks differ by ${Math.abs(res.drift.ppm).toFixed(1)} ppm; corrected (${Math.round(res.drift.correctedMs)} ms over ${fmtDur(res.drift.spanSec)}).</li>`);
+  }
+  for (const P of [A, B]) for (const f of filesOf(res, P)) for (const g of f.map.gaps) {
+    items.push(`<li class="warn">${esc(P.name)}'s phone wasn't recording for ${g.durSec.toFixed(1)} s from ${fmtT(g.outSec - res.T0)} (for example the screen locked). That stretch is silent in ${esc(P.name)}'s track; the stop point was ${esc(g.how)}.</li>`);
+  }
+  for (const t of res.lagTrend) {
+    const ch = t.maxLagMs - t.minLagMs;
+    if (ch >= 15) items.push(`<li class="warn">Over ${Math.round(t.spanSec / 60)} min the ${esc(nameOf(res, t.speaker))} → ${esc(nameOf(res, t.heardBy))} delay varied by ${Math.round(ch)} ms. With only one sync marker, clock drift can't be corrected; late in the call the tracks can be off by about that much.</li>`);
+  }
+  $('checks').innerHTML = items.join('');
+  if (document.activeElement !== $('nameL')) $('nameL').value = A.name;
+  if (document.activeElement !== $('nameR')) $('nameR').value = B.name;
+  $('btnExport').disabled = S.exporting;
+  renderOutputs();
+}
+function clearOutputs() {
+  if (S.outputs) for (const o of S.outputs) URL.revokeObjectURL(o.url);
+  S.outputs = null;
+  S.portrait = null;
+  $('portraitBox').classList.add('hidden');
+  renderOutputs();
+}
+function renderOutputs() {
+  const has = !!(S.outputs && S.outputs.length);
+  $('outputs').classList.toggle('hidden', !has);
+  if (!has) return;
+  $('outList').innerHTML = S.outputs.map((o) => `<li><div class="grow"><a href="${o.url}" download="${esc(o.name)}">${esc(o.name)}</a><small>${esc(o.desc)} · ${fmtBytes(o.blob.size)}</small></div></li>`).join('');
+  let can = false;
+  try { can = !!(navigator.share && navigator.canShare && navigator.canShare({ files: shareFiles() })); } catch (e) { can = false; }
+  $('btnShare').classList.toggle('hidden', !can);
+}
+function shareFiles() { return (S.outputs || []).map((o) => new File([o.blob], o.name, { type: o.blob.type || 'application/octet-stream' })); }
+
+async function doExport() {
+  const res = S.align;
+  if (!res || res.error || S.exporting) return;
+  const gen = S.gen;
+  S.exporting = true; clearOutputs(); renderResult();
+  const [A, B] = ordered(res), mute = $('optMute').checked, names = personWavNames(A, B);
+  try {
+    setStatus('Writing WAV files… 0%', 'busy', 0);
+    const w = await writeWavs(res, A, B, mute, gen, (f) => setStatus(`Writing WAV files… ${Math.round(f * 100)}%`, 'busy', f));
+    const json = buildJson(res, A, B, mute, names);
+    const out = [
+      { name: 'conversation_aligned.wav', blob: w.stereo, desc: `stereo · left ${A.name}, right ${B.name}` },
+      { name: names[0], blob: w.a, desc: `mono · ${A.name} only` },
+      { name: names[1], blob: w.b, desc: `mono · ${B.name} only` },
+      { name: 'alignment.json', blob: new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' }), desc: 'offsets, time maps, checks and transcription instructions', json },
+    ];
+    for (const o of out) o.url = URL.createObjectURL(o.blob);
+    if (gen !== S.gen) { for (const o of out) URL.revokeObjectURL(o.url); return; }
+    S.outputs = out;
+    setStatus('Done. Save the files below (or share them).', res.warnings.length ? 'warn' : 'ok');
+    makePortrait(res, A, B, w.a, w.b, gen).catch((e) => console.warn('portrait failed', e));
+  } catch (err) {
+    if (!(err instanceof Cancelled)) { console.error(err); setStatus('Writing the WAV files failed: ' + (err.message || err), 'bad'); }
+  } finally {
+    S.exporting = false; renderResult();
+  }
+  return S.outputs;
+}
+function downloadUrl(url, name) {
+  const a = document.createElement('a');
+  a.href = url; a.download = name; a.rel = 'noopener';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+async function downloadAll() {
+  for (const o of S.outputs || []) { downloadUrl(o.url, o.name); await new Promise((r) => setTimeout(r, 400)); }
+}
+async function shareAll() {
+  try { await navigator.share({ files: shareFiles(), title: 'Duet aligned recordings' }); }
+  catch (e) { if (!e || e.name !== 'AbortError') setStatus('Sharing didn\'t work here; use the download links instead.', 'warn'); }
+}
+function updateHowTo() {
+  const res = S.align;
+  let A = { name: 'Mack' }, B = { name: 'Friend' };
+  if (res && !res.error && res.people.length === 2) [A, B] = ordered(res);
+  const [fa, fb] = personWavNames(A, B), g = transcriptionGuide(A, B, fa, fb);
+  $('howTo').textContent = ['# WhisperX (recommended)', ...g.whisperx, '', '# or OpenAI Whisper', ...g.openaiWhisper, '',
+    '# merge both transcripts by time (save as merge.py, run: python3 merge.py)', g.mergePython].join('\n');
+}
+
+/* ---------------- adding / removing files ---------------- */
+async function addFiles(list) {
+  const files = Array.from(list || []);
+  if (!files.length) return S.queue;
+  for (const f of files) {
+    if (/\.json$/i.test(f.name) || f.type === 'application/json') {
+      try {
+        const data = JSON.parse(await f.text());
+        if (!data || typeof data !== 'object' || !Array.isArray(data.markers)) throw new Error('not a Duet timing file');
+        S.sidecars = S.sidecars.filter((s) => s.name !== f.name);
+        S.sidecars.push({ name: f.name, data });
+      } catch (e) { setStatus(`${f.name} isn't a Duet timing file; ignored it.`, 'warn'); }
+      continue;
+    }
+    if (S.entries.some((e) => e.name === f.name && e.size === f.size)) continue; // same file twice
+    S.entries.push(makeEntry(f));
+  }
+  // New timing files can change who/which part a recording is, so re-match everything.
+  for (const e of S.entries) { e.sidecar = null; e.sidecarName = null; }
+  S.gen++;
+  return schedule();
+}
+function removeEntry(id) {
+  S.entries = S.entries.filter((e) => e.id !== id);
+  S.gen++;
+  if (!S.entries.length && !S.sidecars.length) { resetAll(); return S.queue; }
+  return schedule();
+}
+function resetAll() {
+  S.gen++;
+  clearOutputs();
+  S.entries = []; S.sidecars = []; S.align = null; S.swap = false; S.names = {};
+  render();
+  setStatus('Add both people\'s recordings to begin.');
+}
+
+/* ---------------- wiring ---------------- */
+$('btnPick').onclick = () => $('fileIn').click();
+$('fileIn').onchange = (ev) => { addFiles(ev.target.files); ev.target.value = ''; };
+$('btnClear').onclick = resetAll;
+$('fileList').addEventListener('click', (ev) => {
+  const b = ev.target.closest('button');
+  if (!b) return;
+  if (b.dataset.rm) removeEntry(+b.dataset.rm);
+  if (b.dataset.rmj) { S.sidecars = S.sidecars.filter((s) => s.name !== b.dataset.rmj); for (const e of S.entries) { e.sidecar = null; e.sidecarName = null; } S.gen++; schedule(); }
+});
+const drop = $('drop');
+['dragenter', 'dragover'].forEach((t) => document.addEventListener(t, (ev) => { ev.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'dragend'].forEach((t) => document.addEventListener(t, (ev) => { if (!ev.relatedTarget) drop.classList.remove('over'); }));
+document.addEventListener('drop', (ev) => { ev.preventDefault(); drop.classList.remove('over'); if (ev.dataTransfer && ev.dataTransfer.files) addFiles(ev.dataTransfer.files); });
+drop.addEventListener('click', () => $('fileIn').click());
+drop.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); $('fileIn').click(); } });
+$('btnSwap').onclick = () => { S.swap = !S.swap; clearOutputs(); render(); };
+const rename = (side) => (ev) => {
+  const res = S.align;
+  if (!res || res.error) return;
+  const P = ordered(res)[side], v = ev.target.value.trim();
+  if (!v || v === P.name) return;
+  S.names[P.key] = v; P.name = v;
+  clearOutputs(); render();
+};
+$('nameL').addEventListener('change', rename(0));
+$('nameR').addEventListener('change', rename(1));
+$('optMute').onchange = () => clearOutputs();
+$('btnExport').onclick = doExport;
+$('btnAll').onclick = downloadAll;
+$('btnShare').onclick = shareAll;
+window.addEventListener('beforeunload', (ev) => { if (S.exporting) { ev.preventDefault(); ev.returnValue = ''; } });
+render();
+
+/* ---------------- conversation portrait ----------------
+   The shape of a conversation, drawn like tree rings: time spirals outward from the centre
+   (one ring = a few minutes). Person A's voice swells outward from the line in a warm colour,
+   person B's inward in a cool one, and where both speak at once the line glows gold.
+   Silence is just the thin line itself. */
+const PORTRAIT_THEMES = {
+  night: { bg: '#0f1216', line: 'rgba(233,228,218,0.13)', a: '#ff8a5c', b: '#4fc0e3', both: '#ffd36e', ink: '#ece6da', muted: 'rgba(236,230,218,0.52)', glow: true, grain: 0.03, grainInk: 255 },
+  paper: { bg: '#f3ede2', line: 'rgba(42,38,34,0.17)', a: '#c4532e', b: '#1f6e7a', both: '#cf961a', ink: '#2a2622', muted: 'rgba(42,38,34,0.55)', glow: false, grain: 0.05, grainInk: 40 },
+};
+const PORTRAIT_STEP = 0.25; // seconds of audio per step along the spiral
+
+// RMS per step from 16-bit PCM
+function portraitLoudness(pcm, sr) {
+  const per = Math.max(1, Math.floor(sr * PORTRAIT_STEP)), n = Math.floor(pcm.length / per), out = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    let s = 0;
+    const o = i * per;
+    for (let j = 0; j < per; j += 2) { const x = pcm[o + j] / 32768; s += x * x; }
+    out[i] = Math.sqrt(s / Math.ceil(per / 2));
+  }
+  return out;
+}
+
+// Linear RMS per step -> 0..1, relative to this person's own quiet level and loud peaks,
+// with a soft release so speech reads as brush strokes rather than static.
+function portraitShape(rms) {
+  const db = Array.from(rms, (r) => 20 * Math.log10((r || 0) + 1e-9));
+  const sorted = db.filter((d) => d > -110).sort((x, y) => x - y);
+  const out = new Float32Array(db.length);
+  if (sorted.length < 8) return out;
+  const q = (f) => sorted[Math.min(sorted.length - 1, Math.floor(f * sorted.length))];
+  const floor = q(0.15) + 8, peak = Math.max(q(0.985), floor + 12);
+  let prev = 0;
+  for (let i = 0; i < db.length; i++) {
+    let v = Math.min(1, Math.max(0, (db[i] - floor) / (peak - floor)));
+    v = Math.max(Math.pow(v, 0.85), prev * 0.55);
+    out[i] = prev = v;
+  }
+  return out;
+}
+
+function portraitRing(dur) {
+  for (const c of [5, 10, 20, 30, 60, 120, 180, 300, 600, 900, 1200, 1800]) if (dur / c <= 9) return c;
+  return 3600;
+}
+function portraitClock(sec) {
+  const s = Math.round(sec), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
+  return h ? `${h}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}` : `${m}:${String(r).padStart(2, '0')}`;
+}
+
+// g: 2D context of a size x size canvas. a, b: 0..1 per step. meta: { nameA, nameB, date }.
+function drawPortrait(g, size, a, b, meta, themeName) {
+  const T = PORTRAIT_THEMES[themeName] || PORTRAIT_THEMES.night;
+  const n = Math.max(a.length, b.length), dur = Math.max(1, n * PORTRAIT_STEP);
+  const ring = portraitRing(dur), rings = Math.max(1, Math.ceil(dur / ring - 1e-9));
+  const cx = size / 2, cy = size * 0.485, r0 = size * 0.095, R = size * 0.425;
+  const gap = (R - r0) / Math.max(rings, 4), h = gap * 0.46; // short calls stay a small, tight spiral
+  const at = (t, off) => {
+    const th = -Math.PI / 2 + 2 * Math.PI * (t / ring), r = r0 + gap * (t / ring) + off;
+    return [cx + r * Math.cos(th), cy + r * Math.sin(th)];
+  };
+  const serif = '"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif';
+  g.save();
+  g.fillStyle = T.bg;
+  g.fillRect(0, 0, size, size);
+  g.lineJoin = 'round'; g.lineCap = 'round';
+
+  // the thread of time
+  g.strokeStyle = T.line;
+  g.lineWidth = Math.max(1, size / 1500);
+  g.beginPath();
+  for (let i = 0; i <= n; i++) { const [x, y] = at(i * PORTRAIT_STEP, 0); if (i) g.lineTo(x, y); else g.moveTo(x, y); }
+  g.stroke();
+
+  // a voice: one filled shape per stretch of speech, between the thread and the voice's edge
+  const voice = (arr, sign, color) => {
+    g.fillStyle = color;
+    let i = 0;
+    while (i < n) {
+      while (i < n && !(arr[i] > 0.03)) i++;
+      if (i >= n) break;
+      const s = i;
+      while (i < n && arr[i] > 0.03) i++;
+      g.beginPath();
+      let p = at(s * PORTRAIT_STEP, 0);
+      g.moveTo(p[0], p[1]);
+      for (let k = s; k < i; k++) {
+        const v = 0.25 * (arr[k - 1] || 0) + 0.5 * arr[k] + 0.25 * (arr[k + 1] || 0);
+        p = at((k + 0.5) * PORTRAIT_STEP, sign * v * h); g.lineTo(p[0], p[1]);
+      }
+      for (let k = i; k >= s; k--) { p = at(k * PORTRAIT_STEP, 0); g.lineTo(p[0], p[1]); }
+      g.closePath();
+      g.fill();
+    }
+  };
+  g.globalAlpha = 0.92;
+  voice(a, +1, T.a);
+  voice(b, -1, T.b);
+  g.globalAlpha = 1;
+
+  // both at once: the thread glows
+  g.strokeStyle = T.both;
+  if (T.glow) { g.shadowColor = T.both; g.shadowBlur = size / 180; }
+  const both = (i) => Math.min(a[i] || 0, b[i] || 0) >= 0.35;
+  for (let i = 0; i < n; i++) {
+    if (!both(i) || !(both(i - 1) || both(i + 1))) continue;
+    const m = Math.min(a[i], b[i]);
+    const [x0, y0] = at(i * PORTRAIT_STEP, 0), [x1, y1] = at((i + 1) * PORTRAIT_STEP, 0);
+    g.lineWidth = Math.max(1.5, m * h * 0.42);
+    g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+  }
+  g.shadowBlur = 0;
+
+  // where the conversation ended
+  const [ex, ey] = at(dur, 0);
+  g.fillStyle = T.ink;
+  g.beginPath(); g.arc(ex, ey, Math.max(2, size / 320), 0, 2 * Math.PI); g.fill();
+  g.textBaseline = 'middle';
+
+  // centre: the two names, in their colours
+  const fit = (text, max, px) => { g.font = `${px}px ${serif}`; const w = g.measureText(text).width; return w > max ? Math.floor(px * max / w) : px; };
+  const px = Math.round(size / 34);
+  g.textAlign = 'center';
+  const nameA = meta.nameA || 'A', nameB = meta.nameB || 'B', maxW = r0 * 1.75;
+  let s1 = fit(nameA, maxW, px);
+  g.font = `italic ${s1}px ${serif}`; g.fillStyle = T.a; g.fillText(nameA, cx, cy - px * 0.72);
+  g.font = `italic ${Math.round(px * 0.62)}px ${serif}`; g.fillStyle = T.muted; g.fillText('&', cx, cy + px * 0.02);
+  s1 = fit(nameB, maxW, px);
+  g.font = `italic ${s1}px ${serif}`; g.fillStyle = T.b; g.fillText(nameB, cx, cy + px * 0.78);
+
+  // footer
+  g.font = `${Math.round(size / 62)}px ${serif}`;
+  g.fillStyle = T.muted;
+  const bits = ['a conversation', meta.date, portraitClock(dur), `one ring = ${ring >= 60 ? ring / 60 + ' min' : ring + ' s'}`].filter(Boolean);
+  g.fillText(bits.join('  ·  '), cx, size * 0.955);
+  // a faint print grain
+  if (T.grain) {
+    const tile = document.createElement('canvas'); tile.width = tile.height = 256;
+    const tg = tile.getContext('2d'), img = tg.createImageData(256, 256);
+    let seed = 12345;
+    for (let i = 0; i < img.data.length; i += 4) {
+      seed = (seed * 16807) % 2147483647;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = T.grainInk;
+      img.data[i + 3] = (seed % 256) < 128 ? Math.round(255 * T.grain * (seed % 97) / 97) : 0;
+    }
+    tg.putImageData(img, 0, 0);
+    g.fillStyle = g.createPattern(tile, 'repeat');
+    g.fillRect(0, 0, size, size);
+  }
+  g.restore();
+}
+
+// WAV (16-bit PCM, as written above) -> samples
+async function readWavPcm(blob) {
+  const buf = await blob.arrayBuffer(), v = new DataView(buf);
+  let p = 12, sr = 16000;
+  while (p + 8 <= buf.byteLength) {
+    const id = String.fromCharCode(v.getUint8(p), v.getUint8(p + 1), v.getUint8(p + 2), v.getUint8(p + 3)), len = v.getUint32(p + 4, true);
+    if (id === 'fmt ') sr = v.getUint32(p + 12, true);
+    if (id === 'data') {
+      const bytes = Math.min(len, buf.byteLength - p - 8) & ~1;
+      return { sr, data: (p + 8) % 2 ? new Int16Array(buf.slice(p + 8, p + 8 + bytes)) : new Int16Array(buf, p + 8, bytes / 2) };
+    }
+    p += 8 + len + (len & 1);
+  }
+  throw new Error('not a WAV file');
+}
+function sessionDate(session) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(session || '');
+  const d = m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date();
+  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+}
+async function makePortrait(res, A, B, blobA, blobB, gen) {
+  const [pa, pb] = await Promise.all([readWavPcm(blobA), readWavPcm(blobB)]);
+  if (gen !== S.gen) return;
+  S.portrait = {
+    a: portraitShape(portraitLoudness(pa.data, pa.sr)), b: portraitShape(portraitLoudness(pb.data, pb.sr)),
+    meta: { nameA: A.name, nameB: B.name, date: sessionDate(res.session) }, theme: 'paper',
+  };
+  renderPortrait();
+}
+function renderPortrait() {
+  const P = S.portrait;
+  if (!P) return;
+  const c = $('portraitCanvas');
+  drawPortrait(c.getContext('2d'), c.width, P.a, P.b, P.meta, P.theme);
+  const T = PORTRAIT_THEMES[P.theme], dur = Math.max(P.a.length, P.b.length) * PORTRAIT_STEP, ring = portraitRing(dur);
+  const col = P.theme === 'paper' ? ['red', 'teal'] : ['orange', 'blue'];
+  $('pCaption').textContent = `The shape of this conversation. Time spirals outward from the centre like tree rings (one ring = ${ring >= 60 ? ring / 60 + ' min' : ring + ' s'}). ` +
+    `${P.meta.nameA}'s voice swells outward in ${col[0]}, ${P.meta.nameB}'s inward in ${col[1]}; gold where you both spoke at once. Quiet stretches are just the thin line.`;
+  $('btnPTheme').textContent = P.theme === 'paper' ? 'Night version' : 'Paper version';
+  c.setAttribute('aria-label', `Conversation portrait of ${P.meta.nameA} and ${P.meta.nameB}, ${portraitClock(dur)} long`);
+  void T;
+  $('portraitBox').classList.remove('hidden');
+}
+$('btnPTheme').onclick = () => { if (!S.portrait) return; S.portrait.theme = S.portrait.theme === 'paper' ? 'night' : 'paper'; renderPortrait(); };
+$('btnPPrint').onclick = () => {
+  const P = S.portrait;
+  if (!P) return;
+  const c = document.createElement('canvas');
+  c.width = c.height = 3600; // 12 in at 300 dpi
+  drawPortrait(c.getContext('2d'), 3600, P.a, P.b, P.meta, P.theme);
+  c.toBlob((b) => {
+    if (!b) { setStatus('This browser could not make the print file.', 'warn'); return; }
+    const url = URL.createObjectURL(b);
+    downloadUrl(url, `conversation_portrait_${P.theme}.png`);
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }, 'image/png');
+};
+
+/* ---------------- hooks for automated tests ---------------- */
+window.DuetAlign = {
+  VERSION, SR, MARK, CFG, S,
+  addFiles, removeEntry, resetAll, doExport, idle: () => S.queue,
+  internals: { drawPortrait, portraitShape, portraitLoudness, readWavPcm, parseFmp4, decodeChunked, fft, template, matchedFilter, findMarkers, envAt, decode16k, gcc, wavHeader, parseName, computeAlignment, buildJson, personWavNames, srcToOut },
+};
+</script>
+</body>
+</html>
